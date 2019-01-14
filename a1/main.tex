@@ -1,0 +1,220 @@
+\documentclass[12pt]{article}
+
+\usepackage[utf8]{inputenc}
+
+\input{setup}
+
+\newcommand{\subtask}[1]{{\bf #1.}}
+
+\begin{document}
+
+
+\section*{Problem 1}
+Sphere {\em floating} in water, i. e. the sphere is still.
+\begin{figure}[H]
+\centering
+\includestandalone[width=0.7\textwidth]{kule}
+\caption{
+    Sphere in equilibrium.
+}
+\label{fig:kule}
+\end{figure}
+\noindent
+The sphere has a density of $0.6$ times that of water.
+Archimedes' principle states that the buoyant force exerted
+og the sphere is equal (in magnitude) to the {\em weight} of the displaced fluid.
+Using density $\rho = 1$ for water, the weight of the displaced fluid is
+\[
+    -\vec{B} = m_{\text{fluid}} \cdot g = v_{\text{fluid}} \cdot g \text,
+\]
+and we know that the weight of the sphere itself is
+\[
+    \vec{F} = m_{\text{sphere}} \cdot g = 0.6 \cdot v_{\text{sphere}} \cdot g \text.
+\]
+At equilibrium, these balance out:
+\[
+    0 = \sum_{\mathclap{\vec f \; \text{force}}} \vec{f} = \vec F - \vec B
+        = g(0.6v_\text{sphere} - v_\text{fluid})
+\]
+Obviously, the volume of displaced fluid is equal to the volume of the
+part of the sphere that is submerged.
+We divide the equation by $g$, and thus
+\begin{equation}
+    v_\text{submerged} = v_\text{fluid} = 0.6 \cdot v_\text{sphere}
+\end{equation}
+we also know that
+\begin{equation}
+    v_\text{sphere} = \frac{4\pi r^3}{3}
+\end{equation}
+\begin{figure}[H]
+\centering
+\includestandalone[width=0.7\textwidth]{sub_vol}
+\caption{
+    Volume of the submerged part of the sphere.
+}
+\label{fig:sub}
+\end{figure}
+\noindent
+and with some analysis, we can work out the volume of the submerged
+part of the sphere. Our strategy is to integrate over
+cylinder-shaped volume elements.
+
+Each volume element has a volume of $\pi \cdot R(r^*) \cdot \D r^*$,
+and we need to integrate from water level and downward in a
+coordinate system on the sphere.
+Thus,
+\begin{equation}
+    v_\text{submerged} =
+        \pi \int\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}R(r^*)^2 \D r^*
+    \quad\text{where}\quad R(r^*) = \sqrt{r^2 - (r^*)^2} \,\text.
+\end{equation}
+We now have our mathematical model.
+It remains to find a solution $x^*$ such that
+\[
+    I(x^*) \coloneqq \frac{v_\text{submerged}}{v_\text{sphere}}
+    = \frac{3}{4 \pi r^3}
+        \pi \int\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}R(r^*)^2 \D r^*
+    = 0.6
+\]
+Given an algorithm to compute definite integrals, this can probably already be
+solved quite easily, but we don't know any such algorithms yet,
+so our strategy is to evaluate the integral by hand, and try
+to create a root-finding problem.
+\begin{align*}
+    I(x^*) &= \frac{3}{4 r^3}
+        \int\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}R(r^*)^2 \D r^* \\
+    &= \frac{3}{4 r^3}
+        \int\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}
+            r^2 - (r^*)^2 \D r^* \\
+    &= \frac{3}{4 r^3} \left(\;\; % create some space for the limits
+        r^2\int\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}
+            \D r^*
+            -
+        \int\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}
+            (r^*)^2\D r^*
+    \right) \\
+    &= \frac{3}{4 r^3} \left(\;\; % create some space for the limits
+    r^2\Sub\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}r^*
+    -
+    \frac{1}{3}\Sub\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}
+        (r^*)^3
+    \right) \\
+    &= \frac{3}{4 r^3} \left(
+    r^2(r + x^*) - \frac{1}{3}\left(r^3 + (x^*)^3\right)
+    \right) \\
+    &= \frac{3}{4 r^3} \left(
+    \frac{2}{3} r^3 + r^2x^* - \frac{1}{3}(x^*)^3
+    \right) \\
+    &= \frac{1}{2} + \frac{3}{4r}x^* - \frac{1}{4 r^3} (x^*)^3 \\
+    &= \frac{x^*}{4r} \left(
+    3 - \left(\frac{x^*}{r}\right)^2
+    \right) + \frac{1}{2}
+\end{align*}
+All that remains is to solve the equation $I(x*) = 0.6$,
+or equivalently
+\[
+    I(x^*) - 0.6 = \frac{x^*}{4r} \left(
+    3 - \left(\frac{x^*}{r}\right)^2
+    \right) + \frac{1}{2} - 0.6 = 0
+\]
+Our analysis reveals that $I(x^*)$ is a polynomial of degree three,
+which is good because its image is all of $\R$, so a root like this is guaranteed
+to exist. {\em Unfortunately, three roots exist.}
+We need to define a criteria to determine which solution is the correct one.
+
+\subsection*{Recall}
+$x^*$ is the position of the center of the sphere along the $\hat x$-axis.
+Clearly, $x^* < -r$ is not a solution that can correspond to anything in
+the real world, as this means the sphere is hovering in mid-air.
+Similarily, $x^* > r$ is not a very good solution, since this is possible
+only if the sphere has density $\rho \geq 1$, and by assumtion $\rho = 0.6$,
+hence a physical solution must exist in the interval $[-r, r]$.
+
+\subsection*{Approximating Solutions}
+We know that if the model corresponds to a physical situation,
+then a solution must exist in the interval $[-r, r]$.
+We also know that there exists exaclty three solutions in all of $\R$.
+If we can find two impossible solutions {\em outside of out interval},
+we can be sure that the solution is unique in our interval!
+
+If we factor our equation, we see that
+\[
+    I(x^*) - 0.6 = \frac{x^*}{4r} \left(
+    3 - \left(\frac{x^*}{r}\right)^2
+    \right) + \frac{1}{2} - 0.6
+\]
+now, we look for solutions to the equation $I(x^*) - 0.5 = 0$.
+These solutions will be quite close to the solutions of $I(x^*) - 0.6$,
+and are super easy to find.
+\[
+    I(x^*) - \frac{1}{2} = \frac{x^*}{4r} \left(
+    3 - \left(\frac{x^*}{r}\right)^2
+    \right) = 0
+    \implies x^* = 0 \quad\text{or}\quad 3 - \left(\frac{x^*}{r}\right)^2 = 0 \,\text.
+\]
+This yields two solutions,
+\[
+    x^* = \pm \sqrt{3}r \,\text,
+\]
+which are both far outside the interval $[-r, r]$.
+Not only does this mean that it is safe to search for the original solution
+on this interval by bisection, but the last solution ($x^* = 0$) of the simplified problem
+tells us that it is going to be smart to start searching close to zero,
+which may helps us approximating the solution faster.
+
+This does {\em not} prove that Newtons method will converge on the {\em entire} interval,
+but starting at $x_0 = 0$, it will, and we will find the solution very quickly.
+
+
+
+
+\section*{Problem 2}
+\subtask{a} Want to use the Taylor series of $f$ around the point $a$,
+$\Tay{f}{a}{x}$, to show that
+
+\[
+    \dd{f}{x} = \frac{f(x + \Delta x) - f(x)}{\Delta x} + {\mathcal O}(\Delta x),
+\]
+in other words, that the error we expect if we compute
+\[
+    \dd{f}{x} \approx \frac{f(x + \Delta x) - f(x)}{\Delta x},
+\]
+is proporional to $\Delta x$, i. e. the error goes to zero
+as $\Delta x$ approaches zero.
+
+Fix $x$ and $\Delta x$. We expand the Taylor series to two terms,
+{\em also including the error term}, around the point $x$.
+\begin{align*}
+    f(x^*) &= \Tay{f}{x}{x^*} \\
+    &= f(x) + f'(x)(x - x^*) + \Err (2) \\
+    \intertext{Which yields}
+    f'(x) &= \frac{f(x^*) - f(x) - \Err(2)}{x - x^*}
+    \intertext{By evaluating the series at $x^* = x + \Delta x$}
+    f'(x) &= \frac{f(x + \Delta x) - f(x)}{\Delta x}
+        - \frac{\Err(2)}{\Delta x}
+\end{align*}
+To show that the error term is $\mathcal O(\Delta x)$ is straight forward:
+\begin{align*}
+    E(\Delta x) \coloneqq \frac{\Err(2)}{\Delta x}
+        &= \frac{1}{\Delta x} \frac{f''(\widetilde{x})}{2!}(x^* - x)^2 \\
+    \intertext{for some $\widetilde{x} \in [x, x^*]$. Again, we evaluate
+    the error term at $x^* = x + \Delta x$.}
+    &= \frac{f''(\widetilde{x})}{2 \Delta x}(\Delta x)^2 \\
+    &= \frac{f''(\widetilde{x})}{2} \Delta x
+\end{align*}
+As long as $f''$ does not blow up on $I = [x, x + \Delta x]$,
+because og the fact that $I$ is bounded and closed, $f''$ attains its maximum and
+minimum on $I$. Thus we can let
+\[
+    L = \Diam\;f(I) = \max_{x, x' \;\in\; I} |f''(x) - f''(x')| \\
+\]
+Which makes
+\[
+    |E(\Delta x)| \leq L \Delta x
+\]
+
+\section*{Problem 3}
+\section*{Problem 4}
+
+
+\end{document}

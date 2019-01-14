@@ -1,0 +1,7 @@
+# latex stuff
+*.log
+*.bcf
+*.run.xml
+*.aux
+
+__pycache__
