@@ -7,13 +7,13 @@
 \newcommand{\subtask}[1]{{\bf #1.}}
 
 \begin{document}
-
+\begin{multicols}{2}
 
 \section*{Problem 1}
 Sphere {\em floating} in water, i. e. the sphere is still.
 \begin{figure}[H]
 \centering
-\includestandalone[width=0.7\textwidth]{kule}
+\includestandalone[width=0.9\columnwidth]{kule}
 \caption{
     Sphere in equilibrium.
 }
@@ -48,7 +48,7 @@ we also know that
 \end{equation}
 \begin{figure}[H]
 \centering
-\includestandalone[width=0.7\textwidth]{sub_vol}
+\includestandalone[width=0.9\columnwidth]{sub_vol}
 \caption{
     Volume of the submerged part of the sphere.
 }
@@ -59,15 +59,18 @@ and with some analysis, we can work out the volume of the submerged
 part of the sphere. Our strategy is to integrate over
 cylinder-shaped volume elements.
 
-Each volume element has a volume of $\pi \cdot R(r^*) \cdot \D r^*$,
+Each volume element has a volume of $\pi \cdot R(r^*)^2 \cdot \D r^*$,
 and we need to integrate from water level and downward in a
 coordinate system on the sphere.
 Thus,
 \begin{equation}
     v_\text{submerged} =
         \pi \int\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}R(r^*)^2 \D r^*
-    \quad\text{where}\quad R(r^*) = \sqrt{r^2 - (r^*)^2} \,\text.
 \end{equation}
+where
+\[
+    R(r^*) = \sqrt{r^2 - (r^*)^2} \,\text.
+\]
 We now have our mathematical model.
 It remains to find a solution $x^*$ such that
 \[
@@ -110,8 +113,7 @@ to create a root-finding problem.
     3 - \left(\frac{x^*}{r}\right)^2
     \right) + \frac{1}{2}
 \end{align*}
-All that remains is to solve the equation $I(x*) = 0.6$,
-or equivalently
+All that remains is to solve the equation
 \[
     I(x^*) - 0.6 = \frac{x^*}{4r} \left(
     3 - \left(\frac{x^*}{r}\right)^2
@@ -146,12 +148,12 @@ If we factor our equation, we see that
 now, we look for solutions to the equation $I(x^*) - 0.5 = 0$.
 These solutions will be quite close to the solutions of $I(x^*) - 0.6$,
 and are super easy to find.
-\[
-    I(x^*) - \frac{1}{2} = \frac{x^*}{4r} \left(
+\begin{align*}
+    &I(x^*) - 0.5 = \frac{x^*}{4r} \left(
     3 - \left(\frac{x^*}{r}\right)^2
-    \right) = 0
-    \implies x^* = 0 \quad\text{or}\quad 3 - \left(\frac{x^*}{r}\right)^2 = 0 \,\text.
-\]
+    \right) = 0 \\
+    \implies &x^* = 0 \quad\text{or}\quad 3 - \left(\frac{x^*}{r}\right)^2 = 0 \,\text.
+\end{align*}
 This yields two solutions,
 \[
     x^* = \pm \sqrt{3}r \,\text,
@@ -202,19 +204,208 @@ To show that the error term is $\mathcal O(\Delta x)$ is straight forward:
     &= \frac{f''(\widetilde{x})}{2 \Delta x}(\Delta x)^2 \\
     &= \frac{f''(\widetilde{x})}{2} \Delta x
 \end{align*}
-As long as $f''$ does not blow up on $I = [x, x + \Delta x]$,
-because og the fact that $I$ is bounded and closed, $f''$ attains its maximum and
+as long as $f''$ does not blow up on $I = [x, x + \Delta x]$.
+Because of the fact that $I$ is bounded and closed, $f''$ attains its maximum and
 minimum on $I$. Thus we can let
 \[
-    L = \Diam\;f(I) = \max_{x, x' \;\in\; I} |f''(x) - f''(x')| \\
+    L = \Diam\;f(I) = \max_{x, y \;\in\; I} \left|f''(x) - f''(y)\right| \\
 \]
 Which makes
 \[
-    |E(\Delta x)| \leq L \Delta x
+    |E(\Delta x)| \leq L \Delta x \,\text.
 \]
 
+\subsection*{Testing the approximation}
+We want to compute the error commited by our formula for
+some function which we know how to differentiate symbolically.
+We want to compute
+\[
+    \Sub\limits_{\mathclap{x = \pi/4}} \dd{}{x} \cos x \,\text.
+\]
+We know that the symbolic derivative of $\cos x$ is $-\sin x$.
+
+% source code
+\begin{lstlisting}[language=Python, caption={Approximate differentiation program}]
+# src/alg.py
+def ddx(f, dx):
+    return lambda x: (f(x + dx) - f(x)) / dx
+\end{lstlisting}
+{\ttfamily ddx} returns a function
+of type {\ttfamily float -> float}
+that closes over {\ttfamily f} and {\ttfamily dx}.
+This new function in turn evaluates the
+derivative at a point {\ttfamily x}.
+
+\begin{lstlisting}[language=Python, caption={\sc Using the differentiation program}]
+import src.alg as alg
+import numpy as np
+from math import sin, cos, pi
+
+def errors(deltas):
+    for dx in deltas:
+        dcosdx = alg.ddx(cos, dx)
+        approx = dcosdx(pi/4)
+        exact  = -sin(pi/4)
+        yield (abs(approx - exact), dx)
+
+dxs = (1/2**k for k in range(30))
+data = list(errors(dxs))
+error, delta = zip(*data)
+\end{lstlisting}
+Plotting {\ttfamily error} against {\ttfamily delta} in
+a logarithmic coordinate system confirms that the error
+is indeed linear in $\Delta x$.
+
+\begin{figure}[H]
+\centering
+\includestandalone[width=0.6\columnwidth]{ddx}
+\caption{
+    The absolute error of the approximation as a function
+    of $\Delta x$ for $f(x) = \cos x$ and $x = \pi/4$
+}
+\label{fig:ddx_err}
+\end{figure}
+\noindent
+
+
+
+\noindent\subtask{b}
+\begin{lstlisting}[language=Python, caption={{\sc Iterating with} {\ttfamily sqrt}}]
+from math import sqrt
+import random as rand
+
+def iter_sqrt(N):
+    x  = rand.random() * 100
+    xh = x
+
+    for l in range(1, N):
+        for k in range(1, l):
+            xh = sqrt(xh)
+        for k in range(1, l):
+            xh = xh**2
+
+        e  = abs(x - xh)
+        er = abs(x - xh) / abs(x)
+
+        yield (e, er, l)
+
+data = list(iter_sqrt(N = 100))
+es, ers, ls = zip(*data)
+\end{lstlisting}
+
+\begin{figure}[H]
+\centering
+\includestandalone[width=0.6\columnwidth]{sqrt}
+\caption{
+    The absolute and relative error committed by the algorithm.
+}
+\label{fig:ddx_err}
+\end{figure}
+\noindent
+
 \section*{Problem 3}
-\section*{Problem 4}
+I will use the interval $I = [1, 5]$, because we agreed
+to that in class.
+This is because the methods do not converge on $[-1, 5]$.
+\begin{lstlisting}[language=Python, caption={Bisection and Newtons method}]
+MAX_ITER = 100
+
+def bisect(f, I):
+    a, b = I
+
+    assert a < b
+    assert f(a) * f(b) < 0
+
+    for _ in range(MAX_ITER):
+        m = 0.5 * (a + b)
+        yield m
+        if f(a) * f(m) < 0:
+            b = m
+        elif f(b) * f(m) < 0:
+            a = m
+        else: continue # then f(m) == 0, do nothing
 
 
+def fpi(g, x0, tol=10E-6):
+    # g contraction, finds x = g(x) by iteration
+    xn    = g(x0) # x1
+    xn_m1 = x0    # x0
+    for _ in range(MAX_ITER):
+        yield xn
+        xn, xn_m1 = g(xn), xn
+
+
+def newton(f, dfdx, x0, tol=10E-6):
+    g = lambda x: x - f(x) / dfdx(x)
+    yield from fpi(g, x0)
+
+def pairs(it):
+    # this technique is deprecated, but whatever
+    # used to get pairwise consecutive elements from
+    # an iterator
+    x = next(it)
+    y = next(it)
+    while True:
+        yield(x, y)
+        x, y = y, next(it)
+\end{lstlisting}
+As you can see, we can implement Newtons method
+as a generic fixed-point iteration.
+I have opted for differentiating $f$ symbolically
+and providing it to {\ttfamily newton}, but
+one might use {\ttfamily ddx} as defined previously.
+
+The functions are defined in a way, such that they
+yield consecutively better approximations, instead
+of returning the best approximation.
+This is just to illustrate the convergence.
+Moreover, we are interested in two types of convergence,
+which the following figures show.
+
+\begin{lstlisting}[language=Python, caption={Comparing the two methods}]
+def g(x): return x**5 - 4*x + 2
+def dgdx(x): return 5*x**4 - 4
+
+n = list(alg.newton(g, dgdx, 1))
+b = list(alg.bisect(g, (1, 5)))
+
+def abs_err(data):
+    for xn, xn_p1 in alg.pairs(iter(data)):
+        yield abs(xn - xn_p1)
+
+i, err_abs_n = zip(*list(enumerate(abs_err(n))))
+_, err_abs_b = zip(*list(enumerate(abs_err(b))))
+
+def f_err(f, data):
+    for xn in data:
+        yield abs(f(xn))
+
+j, err_f_n = zip(*list(enumerate(f_err(g, n))))
+_, err_f_b = zip(*list(enumerate(f_err(g, b))))
+\end{lstlisting}
+\begin{figure}[H]
+\centering
+\includestandalone[width=0.7\columnwidth]{conv}
+\caption{
+    Speed of convergence $|f(x_k)|$.
+}
+\end{figure}
+\noindent
+Somehow, the bisection method converges in a very erratic way.
+
+\begin{figure}[H]
+\centering
+\includestandalone[width=0.7\columnwidth]{conv2}
+\caption{
+    Speed of convergence $|x_{k+1} - x_k|$.
+}
+\end{figure}
+\noindent
+Plotting the errors versus {\ttfamily i} and {\ttfamily j},
+which are the iteration count,
+we see {\em clearly} that Newtons method converges quadratically,
+while bisection converges linearly.
+
+
+\end{multicols}
 \end{document}

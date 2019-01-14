@@ -23,7 +23,7 @@
 
 \newcommand{\R}{\mathbf{R}}
 
-\DeclareMathOperator*{\Sub}{\scalerel*{\big\vert}{\int}}
+\DeclareMathOperator*{\Sub}{\scalerel*{\Bigg\vert}{\int}}
 
 % smash bounding boxes. useful for limits etc.
 \def\mathclap#1{\text{\hbox to 0pt{\hss$\mathsurround=0pt#1$\hss}}}
@@ -58,8 +58,8 @@
 % if you are writing in a single column.
 \usepackage[
     marginparwidth=35mm,
-    right=25mm,
-    left=25mm,
+    right=15mm,
+    left=15mm,
     head=15pt,
 ]{geometry}
 \setlength{\columnsep}{5mm}
@@ -87,8 +87,15 @@
 
 
 \usepackage{listings}
-\lstset{basicstyle=\footnotesize\ttfamily}
-\lstset{frame=bottomline}
+\lstset{
+    basicstyle=\scriptsize\ttfamily
+}
+\lstset{
+    frame=tb,
+    framexleftmargin=2.5em,
+    numbers=left,
+    xleftmargin=2.5em,
+}
 
 \usepackage{bm}
 \usepackage{amsmath}
@@ -113,4 +120,7 @@
 \usepackage{caption}
 \captionsetup{format = plain, font = footnotesize, labelfont = {sc}}
 
+\usepackage{multicol}
 \usepackage{marginnote}
+
+\DeclareUnicodeCharacter{2212}{-}
