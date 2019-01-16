@@ -3,6 +3,7 @@ import numpy as np
 from math import sin, cos, pi
 import matplotlib.pyplot as plt
 import matplotlib
+plt.style.use('classic')
 
 from math import sqrt
 import random as rand
@@ -31,7 +32,7 @@ error, delta = zip(*data)
 plt.yscale("log", basey=2)
 plt.xscale("log", basex=2)
 
-plt.plot(delta, error, "k")
+plt.plot(delta, error, color="red")
 plt.gca().invert_xaxis()
 
 
@@ -41,7 +42,7 @@ plt.ylabel("$\mathtt{error(}\Delta x\mathtt{)}$")
 f.savefig("approx_ddx.pgf")
 
 # 2.b sqrt(sqrt(...sqrt(x)))
-f = plt.figure(constrained_layout=True)
+f = plt.figure()
 
 def iter_sqrt(N):
     x  = rand.random() * 100
@@ -66,10 +67,10 @@ plt.yscale("log")
 plt.xlabel("$l$")
 plt.ylabel("$\mathtt{error(}l\mathtt{)}$")
 
-plt.plot(ls, es, color="r", label="$e(l)$")
-plt.plot(ls, ers, color="g", label="$er(l)$")
+plt.plot(ls, es, color="red", label="$e(l)$")
+plt.plot(ls, ers, color="blue", label="$er(l)$")
 
-plt.legend()
+plt.legend(loc="upper left")
 
 f.savefig("sqrt_err.pgf")
 
@@ -81,7 +82,7 @@ n = list(alg.newton(g, dgdx, 1))
 b = list(alg.bisect(g, (1, 5)))
 
 # 3. speed of convergence abs tol
-f = plt.figure(constrained_layout=True)
+f = plt.figure()
 plt.yscale("log")
 
 def abs_err(data):
@@ -92,14 +93,14 @@ i, err_abs_n = zip(*list(enumerate(abs_err(n))))
 _, err_abs_b = zip(*list(enumerate(abs_err(b))))
 
 plt.plot(i, err_abs_b, color="red", label="bisect")
-plt.plot(i, err_abs_n, color="green", label="newton")
+plt.plot(i, err_abs_n, color="blue", label="newton")
 
 plt.legend()
 
 f.savefig("speed_conv_abs.pgf")
 
 # 3. speed of conv. f tol
-f = plt.figure(constrained_layout=True)
+f = plt.figure()
 plt.yscale("log")
 
 
@@ -111,7 +112,7 @@ j, err_f_n = zip(*list(enumerate(f_err(g, n))))
 _, err_f_b = zip(*list(enumerate(f_err(g, b))))
 
 plt.plot(j, err_f_b, color="red", label="bisect")
-plt.plot(j, err_f_n, color="green", label="newton")
+plt.plot(j, err_f_n, color="blue", label="newton")
 
 
 plt.legend()

@@ -1,12 +1,27 @@
 \documentclass[12pt]{article}
 
-\usepackage[utf8]{inputenc}
-
 \input{setup}
 
 \newcommand{\subtask}[1]{{\bf #1.}}
 
+\definecolor{Themecolor}{HTML}{C1DCBD}
+
 \begin{document}
+\begin{titlepage}
+    \pagecolor{Themecolor}
+    \newgeometry{inner=0pt, outer=0pt}
+    \afterpage{
+        \nopagecolor
+        \restoregeometry
+    }
+    \begin{center}
+        {\large\fontspec{Gill Sans}\addfontfeature{LetterSpace=20.0}STEFFEN HAUG}\\[2em]
+        {\Huge\it Numerical Methods}
+        \vfill
+        {\ttfamily Assignment 1}
+    \end{center}
+\end{titlepage}
+
 \begin{multicols}{2}
 
 \section*{Problem 1}
@@ -17,13 +32,12 @@ Sphere {\em floating} in water, i. e. the sphere is still.
 \caption{
     Sphere in equilibrium.
 }
-\label{fig:kule}
 \end{figure}
 \noindent
-The sphere has a density of $0.6$ times that of water.
+The sphere has a density of $\rho = 0.6$ times that of water.
 Archimedes' principle states that the buoyant force exerted
 og the sphere is equal (in magnitude) to the {\em weight} of the displaced fluid.
-Using density $\rho = 1$ for water, the weight of the displaced fluid is
+    Using density $\rho_\text{fluid} = 1$ for water, the weight of the displaced fluid is
 \[
     -\vec{B} = m_{\text{fluid}} \cdot g = v_{\text{fluid}} \cdot g \text,
 \]
@@ -33,7 +47,7 @@ and we know that the weight of the sphere itself is
 \]
 At equilibrium, these balance out:
 \[
-    0 = \sum_{\mathclap{\vec f \; \text{force}}} \vec{f} = \vec F - \vec B
+    0 = \vec F - \vec B
         = g(0.6v_\text{sphere} - v_\text{fluid})
 \]
 Obviously, the volume of displaced fluid is equal to the volume of the
@@ -52,7 +66,6 @@ we also know that
 \caption{
     Volume of the submerged part of the sphere.
 }
-\label{fig:sub}
 \end{figure}
 \noindent
 and with some analysis, we can work out the volume of the submerged
@@ -77,7 +90,7 @@ It remains to find a solution $x^*$ such that
     I(x^*) \coloneqq \frac{v_\text{submerged}}{v_\text{sphere}}
     = \frac{3}{4 \pi r^3}
         \pi \int\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}R(r^*)^2 \D r^*
-    = 0.6
+    = \rho = 0.6
 \]
 Given an algorithm to compute definite integrals, this can probably already be
 solved quite easily, but we don't know any such algorithms yet,
@@ -89,85 +102,171 @@ to create a root-finding problem.
     &= \frac{3}{4 r^3}
         \int\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}
             r^2 - (r^*)^2 \D r^* \\
-    &= \frac{3}{4 r^3} \left(\;\; % create some space for the limits
-        r^2\int\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}
-            \D r^*
-            -
-        \int\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}
-            (r^*)^2\D r^*
-    \right) \\
-    &= \frac{3}{4 r^3} \left(\;\; % create some space for the limits
-    r^2\Sub\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}r^*
-    -
-    \frac{1}{3}\Sub\limits_{\mathclap{r^* = -x^*}}^{\mathclap{r^* = r}}
-        (r^*)^3
-    \right) \\
-    &= \frac{3}{4 r^3} \left(
-    r^2(r + x^*) - \frac{1}{3}\left(r^3 + (x^*)^3\right)
-    \right) \\
-    &= \frac{3}{4 r^3} \left(
-    \frac{2}{3} r^3 + r^2x^* - \frac{1}{3}(x^*)^3
-    \right) \\
-    &= \frac{1}{2} + \frac{3}{4r}x^* - \frac{1}{4 r^3} (x^*)^3 \\
-    &= \frac{x^*}{4r} \left(
-    3 - \left(\frac{x^*}{r}\right)^2
-    \right) + \frac{1}{2}
+    &= \frac{3}{4 r^3} \cdot
+    \smashoperator{\Sub\limits_{r^* = -x^*}^{r^* = r}}r^2 r^* - \frac{1}{3}(r^*)^3 \\
+    &= \frac{1}{4 r^3} \left(
+    3r^2(r + x^*) - r^3 - (x^*)^3
+    \right)
 \end{align*}
+This is a good time to check that
+\[
+        I(-r) = 0\text, \quad
+        I(0) = 1/2\text, \quad \text{and} \quad
+        I(r) = 1
+\]
+Which is our limit cases, where the sphere is either hovering
+above the fluid ($x^* = -r$), or is completely submerged ($x^* = r$).
+The $x^* = 0$ case corresponds to exactly half the sphere
+being submerged.
+\begin{lstlisting}[language=Python, caption={Checking for a given radius}]
+def I(h, r):
+    p = (3 * r**2 * (r + h) - r**3 - h**3)
+    q = (4 * r**3)
+    return p / q
+\end{lstlisting}
+\vspace{-0.5\baselineskip}
+\begin{lstlisting}[language=Python, frame=b,numbers=none]
+>>> r = 17
+>>> I(r, r)
+1.0
+>>> I(-r, r)
+0.0
+>>> I(0, r)
+0.5
+\end{lstlisting}
 All that remains is to solve the equation
 \[
-    I(x^*) - 0.6 = \frac{x^*}{4r} \left(
-    3 - \left(\frac{x^*}{r}\right)^2
-    \right) + \frac{1}{2} - 0.6 = 0
+    I(x^*) - \rho = 0\text; \quad 0 < \rho < 1 \,\text,
 \]
+where $\rho$ is the density of the sphere.
 Our analysis reveals that $I(x^*)$ is a polynomial of degree three,
 which is good because its image is all of $\R$, so a root like this is guaranteed
 to exist. {\em Unfortunately, three roots exist.}
 We need to define a criteria to determine which solution is the correct one.
 
-\subsection*{Recall}
-$x^*$ is the position of the center of the sphere along the $\hat x$-axis.
-Clearly, $x^* < -r$ is not a solution that can correspond to anything in
-the real world, as this means the sphere is hovering in mid-air.
-Similarily, $x^* > r$ is not a very good solution, since this is possible
-only if the sphere has density $\rho \geq 1$, and by assumtion $\rho = 0.6$,
-hence a physical solution must exist in the interval $[-r, r]$.
+Obciously, the sphere will not hover in mid-air, and since we
+have assumed $\rho < 1$, it will not sink.
+Clearly then, all {\em physical} solutions must be in the interval
+$[-r, r]$.
+If we were to prove that the {\sc contraction mapping theorem}
+applies to some function $g: [-r, r] \rightarrow [-r, r]$, then
+we would have a guarantee that the physical solution is unique,
+and we would have defined a procedure to approximate it
+in the proccess.
 
-\subsection*{Approximating Solutions}
-We know that if the model corresponds to a physical situation,
-then a solution must exist in the interval $[-r, r]$.
-We also know that there exists exaclty three solutions in all of $\R$.
-If we can find two impossible solutions {\em outside of out interval},
-we can be sure that the solution is unique in our interval!
-
-If we factor our equation, we see that
+\subsection*{Applying the contraction\\ mapping theorem}
+If we factor $I(x^*)$ in a particular manner, we see that
 \[
-    I(x^*) - 0.6 = \frac{x^*}{4r} \left(
+    I(x^*) = \frac{x^*}{4r} \left(
     3 - \left(\frac{x^*}{r}\right)^2
-    \right) + \frac{1}{2} - 0.6
+    \right) + \frac{1}{2} \,\text,
 \]
-now, we look for solutions to the equation $I(x^*) - 0.5 = 0$.
-These solutions will be quite close to the solutions of $I(x^*) - 0.6$,
-and are super easy to find.
+and that we may write the equation $I(x^*) - \rho = 0$ as
+\[
+    x^* = g(x^*) =
+    -4r
+    \left(
+    \frac{1 - 2\rho}{2}
+    \right)
+    \left(
+    3 - \left(\frac{x^*}{r}\right)^2
+    \right)^{-1}
+    \text.
+\]
+Notice that $g(x^*)$ is continuous on $[-r, r]$.
+It does have singularities at $x^* = \pm r \sqrt 3$,
+but that is outside the interval,
+hence the mean value theorem holds:
+\[
+    g(x) - g(y) = g'(m)(x - y) \,\text,
+\]
+for some $m \in [-r, r]$.
+To place a bound on $g'(m)$, we need to evaluate
+$\textdd{g}{x^*}$ using the chain rule.
 \begin{align*}
-    &I(x^*) - 0.5 = \frac{x^*}{4r} \left(
-    3 - \left(\frac{x^*}{r}\right)^2
-    \right) = 0 \\
-    \implies &x^* = 0 \quad\text{or}\quad 3 - \left(\frac{x^*}{r}\right)^2 = 0 \,\text.
+    \dd{g}{x^*} &=
+    \underbrace{
+    -4r
+    \left(
+    \frac{1 - 2\rho}{2}
+    \right)}_\text{constant}
+    \underbrace{\dd{}{x^*}
+    \left(3 - \left(\frac{x^*}{r}\right)^2\right)^{-1}
+    }_{\gamma(x^*)} \\
+    \gamma &=
+    -\left(3 - \left(\frac{x^*}{r}\right)^2\right)^{-2}
+    \dd{}{x^*}
+    -\left(\frac{x^*}{r}\right)^2 \\
+    &=
+    \left(3 - \left(\frac{x^*}{r}\right)^2\right)^{-2}
+    2\left(\frac{x^*}{r}\right)
+    \dd{}{x^*}
+    \frac{x^*}{r} \\
+    &=
+    \left(3 - \left(\frac{x^*}{r}\right)^2\right)^{-2}
+    2\left(\frac{x^*}{r}\right)
+    \frac{1}{r}
 \end{align*}
-This yields two solutions,
+We can rearrange this a little, and multiply by $1 = r^2 \cdot r^{-2}$:
+\begin{align*}
+    \gamma &=
+    2 x^* r^{-2} \left(3 - \left(\frac{x^*}{r}\right)^2\right)^{-2}
+    \cdot r^2r^{-2} \\
+    &=
+    2 x^* r^2 \left(3r^2 - \left(\frac{x^*}{r}\right)^2r^2\right)^{-2} \\
+    &=
+    2 x^* r^2 \left(3r^2 - \left(x^*\right)^2\right)^{-2}
+\end{align*}
+then
+\begin{align*}
+    \dd{g}{x^*} &=
+    -4r
+    \left(
+    \frac{1 - 2\rho}{2}
+    \right) \gamma(x^*) \\
+    &=
+    \underbrace{
+    -8r^3
+    \left(
+    \frac{1 - 2\rho}{2}
+    \right) x^*}
+_\text{monotonically decreasing}
+    \overbrace{\left(3r^2 - \left(x^*\right)^2\right)^{-2}}
+    ^{\mathclap{\text{strictly positive for } x^* \in [-r, r]}}
+\end{align*}
+i. e., $g'(x^*)$ is itself monotonically decreasing.
+This is very fortunate, since it suffices to evaluate
+$g'$ in the endpoints of $[-r, r]$.
+\begin{align*}
+    \smashoperator[r]{\Sub \limits_{x^* = -r}} \dd{g}{x^*} &=
+    -\frac{1 - 2\rho}{2}\frac{8r^4}{(2r^2)^2} = 2\rho - 1 \\
+    \smashoperator[r]{\Sub \limits_{x^* = r}} \dd{g}{x^*} &=
+    \frac{1 - 2\rho}{2}\frac{8r^4}{(2r^2)^2} = -(2\rho - 1)
+\end{align*}
+This finally proves that
 \[
-    x^* = \pm \sqrt{3}r \,\text,
+    \smashoperator[l]{\max_{x^* \in [-r, r]}} \left|\dd{g}{x^*}\right| = |2\rho - 1|
+    \,\text,
 \]
-which are both far outside the interval $[-r, r]$.
-Not only does this mean that it is safe to search for the original solution
-on this interval by bisection, but the last solution ($x^* = 0$) of the simplified problem
-tells us that it is going to be smart to start searching close to zero,
-which may helps us approximating the solution faster.
-
-This does {\em not} prove that Newtons method will converge on the {\em entire} interval,
-but starting at $x_0 = 0$, it will, and we will find the solution very quickly.
-
-
+and moreover, $|2\rho - 1| < 1$ by the assumption ${0 < \rho < 1}$.
+This works out exactly so that the assumptions of the contraction mapping theorem holds:
+\begin{align*}
+    |g(x) - g(y)| &= |g'(m)||x - y|
+    \tag*{\footnotesize\scshape mean value theorem} \\
+    &\leq |2\rho - 1||x - y| \\
+    &< |x - y|
+\end{align*}
+In other words, the contraction mapping theorem
+holds with $L = 1$.
+Thus
+\[
+    \left\{\begin{array}{l}
+        \big\{ x_n \big\}_{n = 0}^{\infty} \\
+        x_n = g \left( x_{n-1} \right) \\
+        x_0 \in [-r, r]
+    \end{array}\right.
+\]
+converges to the unique, physical solution, no matter the choice of $x_0$.
 
 
 \section*{Problem 2}
@@ -188,16 +287,16 @@ Fix $x$ and $\Delta x$. We expand the Taylor series to two terms,
 {\em also including the error term}, around the point $x$.
 \begin{align*}
     f(x^*) &= \Tay{f}{x}{x^*} \\
-    &= f(x) + f'(x)(x - x^*) + \Err (2) \\
+    &= f(x) + f'(x)(x^* - x) + \Err{2}(x^*) \\
     \intertext{Which yields}
-    f'(x) &= \frac{f(x^*) - f(x) - \Err(2)}{x - x^*}
+    f'(x) &= \frac{f(x^*) - f(x) - \Err{2}(x^*)}{x^* - x}
     \intertext{By evaluating the series at $x^* = x + \Delta x$}
     f'(x) &= \frac{f(x + \Delta x) - f(x)}{\Delta x}
-        - \frac{\Err(2)}{\Delta x}
+        - \frac{\Err{2}(x^*)}{\Delta x}
 \end{align*}
 To show that the error term is $\mathcal O(\Delta x)$ is straight forward:
 \begin{align*}
-    E(\Delta x) \coloneqq \frac{\Err(2)}{\Delta x}
+    E(\Delta x) \coloneqq \frac{\Err{2}(x^*)}{\Delta x}
         &= \frac{1}{\Delta x} \frac{f''(\widetilde{x})}{2!}(x^* - x)^2 \\
     \intertext{for some $\widetilde{x} \in [x, x^*]$. Again, we evaluate
     the error term at $x^* = x + \Delta x$.}
@@ -236,7 +335,7 @@ that closes over {\ttfamily f} and {\ttfamily dx}.
 This new function in turn evaluates the
 derivative at a point {\ttfamily x}.
 
-\begin{lstlisting}[language=Python, caption={\sc Using the differentiation program}]
+\begin{lstlisting}[language=Python, caption={Using the differentiation program}]
 import src.alg as alg
 import numpy as np
 from math import sin, cos, pi
@@ -263,14 +362,15 @@ is indeed linear in $\Delta x$.
     The absolute error of the approximation as a function
     of $\Delta x$ for $f(x) = \cos x$ and $x = \pi/4$
 }
-\label{fig:ddx_err}
 \end{figure}
 \noindent
 
 
 
-\noindent\subtask{b}
-\begin{lstlisting}[language=Python, caption={{\sc Iterating with} {\ttfamily sqrt}}]
+\noindent\subtask{b} We want to observe the propagation of numerical
+error when iterating with a transformation using floating-point
+arithmetic.
+\begin{lstlisting}[language=Python, caption={{Iterating with} {\ttfamily sqrt}}]
 from math import sqrt
 import random as rand
 
@@ -299,14 +399,10 @@ es, ers, ls = zip(*data)
 \caption{
     The absolute and relative error committed by the algorithm.
 }
-\label{fig:ddx_err}
 \end{figure}
 \noindent
 
 \section*{Problem 3}
-I will use the interval $I = [1, 5]$, because we agreed
-to that in class.
-This is because the methods do not converge on $[-1, 5]$.
 \begin{lstlisting}[language=Python, caption={Bisection and Newtons method}]
 MAX_ITER = 100
 
@@ -323,7 +419,7 @@ def bisect(f, I):
             b = m
         elif f(b) * f(m) < 0:
             a = m
-        else: continue # then f(m) == 0, do nothing
+        else: continue # then f(m) == 0
 
 
 def fpi(g, x0, tol=10E-6):
@@ -352,15 +448,19 @@ def pairs(it):
 As you can see, we can implement Newtons method
 as a generic fixed-point iteration.
 I have opted for differentiating $f$ symbolically
-and providing it to {\ttfamily newton}, but
-one might use {\ttfamily ddx} as defined previously.
+and providing it to {\ttfamily newton}.
 
 The functions are defined in a way, such that they
 yield consecutively better approximations, instead
-of returning the best approximation.
-This is just to illustrate the convergence.
+of returning the best approximation in the end.
+This is just because we want to illustrate the convergence.
 Moreover, we are interested in two types of convergence,
 which the following figures show.
+
+Plotting the errors versus {\ttfamily i} and {\ttfamily j},
+which are the iteration count,
+we see clearly that Newtons method converges quadratically,
+while bisection converges linearly.
 
 \begin{lstlisting}[language=Python, caption={Comparing the two methods}]
 def g(x): return x**5 - 4*x + 2
@@ -388,10 +488,11 @@ _, err_f_b = zip(*list(enumerate(f_err(g, b))))
 \includestandalone[width=0.7\columnwidth]{conv}
 \caption{
     Speed of convergence $|f(x_k)|$.
+    This clearly illustrates that the midpoint moves back and forth,
+    as the interval shrinks from different sides.
 }
 \end{figure}
 \noindent
-Somehow, the bisection method converges in a very erratic way.
 
 \begin{figure}[H]
 \centering
@@ -400,11 +501,6 @@ Somehow, the bisection method converges in a very erratic way.
     Speed of convergence $|x_{k+1} - x_k|$.
 }
 \end{figure}
-\noindent
-Plotting the errors versus {\ttfamily i} and {\ttfamily j},
-which are the iteration count,
-we see {\em clearly} that Newtons method converges quadratically,
-while bisection converges linearly.
 
 
 \end{multicols}
