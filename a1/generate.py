@@ -92,6 +92,9 @@ def abs_err(data):
 i, err_abs_n = zip(*list(enumerate(abs_err(n))))
 _, err_abs_b = zip(*list(enumerate(abs_err(b))))
 
+for i, v in (i, err_abs_n):
+    print(i, v)
+
 plt.plot(i, err_abs_b, color="red", label="bisect")
 plt.plot(i, err_abs_n, color="blue", label="newton")
 
@@ -113,9 +116,6 @@ _, err_f_b = zip(*list(enumerate(f_err(g, b))))
 
 plt.plot(j, err_f_b, color="red", label="bisect")
 plt.plot(j, err_f_n, color="blue", label="newton")
-
-
 plt.legend()
 
 f.savefig("speed_conv_f.pgf")
-

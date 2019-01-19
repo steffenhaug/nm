@@ -15,9 +15,9 @@
 %%
 %% Matplotlib used the following preamble
 %%   \usepackage{fontspec}
-%%   \setmainfont{DejaVu Serif}
-%%   \setsansfont{DejaVu Sans}
-%%   \setmonofont{DejaVu Sans Mono}
+%%   \setmainfont{Times New Roman}
+%%   \setsansfont{Lucida Grande}
+%%   \setmonofont{Andale Mono}
 %%
 \begingroup%
 \makeatletter%
@@ -810,10 +810,10 @@
 \definecolor{currentstroke}{rgb}{0.000000,0.000000,0.000000}%
 \pgfsetstrokecolor{currentstroke}%
 \pgfsetdash{}{0pt}%
-\pgfpathmoveto{\pgfqpoint{4.848076in}{4.279336in}}%
-\pgfpathlineto{\pgfqpoint{7.050000in}{4.279336in}}%
+\pgfpathmoveto{\pgfqpoint{5.086845in}{4.311680in}}%
+\pgfpathlineto{\pgfqpoint{7.050000in}{4.311680in}}%
 \pgfpathlineto{\pgfqpoint{7.050000in}{5.250000in}}%
-\pgfpathlineto{\pgfqpoint{4.848076in}{5.250000in}}%
+\pgfpathlineto{\pgfqpoint{5.086845in}{5.250000in}}%
 \pgfpathclose%
 \pgfusepath{stroke,fill}%
 \end{pgfscope}%
@@ -824,12 +824,12 @@
 \definecolor{currentstroke}{rgb}{1.000000,0.000000,0.000000}%
 \pgfsetstrokecolor{currentstroke}%
 \pgfsetdash{}{0pt}%
-\pgfpathmoveto{\pgfqpoint{5.058076in}{5.007070in}}%
-\pgfpathlineto{\pgfqpoint{5.478076in}{5.007070in}}%
+\pgfpathmoveto{\pgfqpoint{5.296845in}{5.025000in}}%
+\pgfpathlineto{\pgfqpoint{5.716845in}{5.025000in}}%
 \pgfusepath{stroke}%
 \end{pgfscope}%
 \begin{pgfscope}%
-\pgftext[x=5.808076in,y=4.902070in,left,base]{\fontsize{21.600000}{25.920000}\selectfont bisect}%
+\pgftext[x=6.046845in,y=4.920000in,left,base]{\fontsize{21.600000}{25.920000}\selectfont bisect}%
 \end{pgfscope}%
 \begin{pgfscope}%
 \pgfsetrectcap%
@@ -838,12 +838,12 @@
 \definecolor{currentstroke}{rgb}{0.000000,0.000000,1.000000}%
 \pgfsetstrokecolor{currentstroke}%
 \pgfsetdash{}{0pt}%
-\pgfpathmoveto{\pgfqpoint{5.058076in}{4.566738in}}%
-\pgfpathlineto{\pgfqpoint{5.478076in}{4.566738in}}%
+\pgfpathmoveto{\pgfqpoint{5.296845in}{4.600840in}}%
+\pgfpathlineto{\pgfqpoint{5.716845in}{4.600840in}}%
 \pgfusepath{stroke}%
 \end{pgfscope}%
 \begin{pgfscope}%
-\pgftext[x=5.808076in,y=4.461738in,left,base]{\fontsize{21.600000}{25.920000}\selectfont newton}%
+\pgftext[x=6.046845in,y=4.495840in,left,base]{\fontsize{21.600000}{25.920000}\selectfont newton}%
 \end{pgfscope}%
 \end{pgfpicture}%
 \makeatother%

@@ -36,3 +36,16 @@ def fpi(g, x0, tol=10E-6):
 def newton(f, dfdx, x0, tol=10E-6):
     g = lambda x: x - f(x) / dfdx(x)
     yield from fpi(g, x0)
+
+
+# functions for problem 1
+def I(h, r):
+    p = (3 * r**2 * (r + h) - r**3 - h**3)
+    q = (4 * r**3)
+    return p / q
+
+def g(h, r, rho):
+    f1 = -4 * r
+    f2 = (1 - 2*rho)/2
+    f3 = 1 / (3 - (h/r)**2)
+    return f1 * f2 * f3
