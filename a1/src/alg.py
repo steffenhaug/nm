@@ -19,11 +19,12 @@ def bisect(f, I):
             b = m
         elif f(b) * f(m) < 0:
             a = m
-        else: continue # m is 0, do nothing
+        else: return # f(m) == 0 so stop
 
 
 def fpi(g, x0, tol=10E-6):
     # g contraction, finds x = g(x) by iteration
+    # starting with x1
     xn    = g(x0) # x1
     xn_m1 = x0    # x0
     for _ in range(MAX_ITER):

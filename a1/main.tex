@@ -419,11 +419,10 @@ def bisect(f, I):
             b = m
         elif f(b) * f(m) < 0:
             a = m
-        else: continue # then f(m) == 0
+        else: return # then f(m) == 0, so stop
 
 
-def fpi(g, x0, tol=10E-6):
-    # g contraction, finds x = g(x) by iteration
+def fpi(g, x0):
     xn    = g(x0) # x1
     xn_m1 = x0    # x0
     for _ in range(MAX_ITER):
@@ -431,14 +430,11 @@ def fpi(g, x0, tol=10E-6):
         xn, xn_m1 = g(xn), xn
 
 
-def newton(f, dfdx, x0, tol=10E-6):
+def newton(f, dfdx, x0):
     g = lambda x: x - f(x) / dfdx(x)
     yield from fpi(g, x0)
 
 def pairs(it):
-    # this technique is deprecated, but whatever
-    # used to get pairwise consecutive elements from
-    # an iterator
     x = next(it)
     y = next(it)
     while True:
@@ -502,6 +498,124 @@ _, err_f_b = zip(*list(enumerate(f_err(g, b))))
 }
 \end{figure}
 
+\subsection*{Numerical experiment}
+We want to verify that bisection converges linearly,
+and that Newton's method converges quadratically, by
+a numerical experiment.
+Recalling the definition of speed of convergence,
+we need to find two sequences, for bisection $x_n$:
+\[
+    \Seq{\epsilon _n}_{n = 0}^\infty \;\text;\quad
+        \lim_{n \rightarrow \infty}
+            \frac
+                {\left| \epsilon_{n + 1} \right|}
+                {\left| \epsilon_n \right|}
+        = \mu \,\text,
+\]
+and for Newtons method $y_n$:
+\[
+    \Seq{\delta_n}_{n = 0}^\infty \;\text;\quad
+        \lim_{n \rightarrow \infty}
+            \frac
+                {\left| \delta_{n + 1} \right|}
+                {\left| \delta_n \right|^2}
+        = \nu \,\text.
+\]
+This measure of the error is slightly different from the
+ones we plotted before, so some programming work is required:
+\begin{lstlisting}[language=Python, caption={Generators for the errors}]
+ns = list(alg.newton(g, dgdx, 1))
+bs = list(alg.bisect(g, (1, 5)))
+
+# define the limit as the last
+# iteration of newtons method.
+L = ns[-1]
+
+ns_err = (abs(xn - L) for xn in ns)
+bs_err = (abs(xn - L) for xn in bs)
+\end{lstlisting}
+
+\subsection*{Bounding the error}
+Our strategy is to try and come up with two sequences of
+the kind above, such that one bounds
+the error from above, and one bounds the error from below.
+If we can find two such sequences where the inequality holds
+for any number of iterations, then certainly the
+sequence in-between converges at the same rate.
+There are two problems with this: First and foremost
+{\em we only have a finite number of terms of the sequence},
+so we can't say much about the asymptotic behaviour.
+Secondly, {\em we only have finite precision},
+so at some point, small numbers are rounded down to zero,
+which means that even if we {\em could} compute
+an infinite number of elements, the asymptotic behaviour would
+be incorrect past some point.
+
+We begin with the bisection method, as the linear case is (presumably)
+simpler.
+The obvious sequence to compare the error with is
+\[
+    \Seq{\epsilon_n}(x) = \left\{\begin{array}{l@{\,}l}
+        \epsilon_{n+1} & = \mu \cdot \epsilon_n \\
+        \epsilon_0 & = x
+    \end{array}\right.
+\]
+Where we ``guess'' $\mu \coloneqq 1/2$, because each iteration
+makes the interval exactly half the size.
+Notice that $\epsilon_n$ can be computed
+with an iterative procedure using the function $x \mapsto \mu x$.
+\begin{lstlisting}[language=Python, caption={Computing the sequences}]
+mu = 0.5
+es1 = list(alg.fpi(lambda x: mu * x, 10))
+es2 = list(alg.fpi(lambda x: mu * x, 10E-4))
+\end{lstlisting}
+\begin{figure}[H]
+\centering
+\includestandalone[width=0.7\columnwidth]{exp_bisect}
+\caption{
+    Absolute error of bisection method, with the
+    sequence $\epsilon_n$.
+    Past roughly $10^{-15}$, the error ``drops'' suddenly.
+}
+\end{figure} \noindent
+The sudden drop in error may be explained by
+the fact that the bisection algorithm needs to
+evaluate $f(x)$ in the endpoints, and
+as we approach the solution, this value becomes
+incredibly small.
+If we come {\em close enough}, this must be rounded down
+to zero, because python does not do arbitrary precision
+arithmetic.
+
+For Newton's method, the choice of constants is less clear.
+Never the less, we are looking for a sequence
+\[
+    \Seq{\delta_n}(x) = \left\{\begin{array}{l@{\,}l}
+        \delta_{n+1} & = \nu \cdot \delta_n^2 \\
+        \delta_0 & = x
+    \end{array}\right.
+\]
+I have set $\nu \coloneqq 9/10$, which i found by trial and error.
+Presumably, it is possible to find a constant by doing
+some analysis.
+
+We iterate with $x \mapsto \nu \cdot x^2$,
+and we see the same thing happen here: Errors smaller than $10^{-15}$
+or so are rounded down to zero, so it is really hard to see
+if the error is {\em really} bounded by the sequences.
+Not only that, but Newtons method converges so quickly that
+we can only consider the first seven iterations before the error is
+rounded down.
+
+
+\begin{figure}[H]
+\centering
+\includestandalone[width=0.7\columnwidth]{exp_newton}
+\caption{
+    Absolute error of newtons method,
+    with the sequence $\delta_n$.
+}
+\end{figure}
 
 \end{multicols}
 \end{document}

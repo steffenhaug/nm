@@ -3,8 +3,9 @@ import numpy as np
 from math import sin, cos, pi
 import matplotlib.pyplot as plt
 import matplotlib
-plt.style.use('classic')
 
+# plot style and font setup
+plt.style.use('classic')
 from math import sqrt
 import random as rand
 
@@ -90,13 +91,10 @@ def abs_err(data):
         yield abs(xn - xn_p1)
 
 i, err_abs_n = zip(*list(enumerate(abs_err(n))))
-_, err_abs_b = zip(*list(enumerate(abs_err(b))))
+j, err_abs_b = zip(*list(enumerate(abs_err(b))))
 
-for i, v in (i, err_abs_n):
-    print(i, v)
-
-plt.plot(i, err_abs_b, color="red", label="bisect")
 plt.plot(i, err_abs_n, color="blue", label="newton")
+plt.plot(j, err_abs_b, color="red", label="bisect")
 
 plt.legend()
 
@@ -111,11 +109,98 @@ def f_err(f, data):
     for xn in data:
         yield abs(f(xn))
 
-j, err_f_n = zip(*list(enumerate(f_err(g, n))))
-_, err_f_b = zip(*list(enumerate(f_err(g, b))))
+i, err_f_n = zip(*list(enumerate(f_err(g, n))))
+j, err_f_b = zip(*list(enumerate(f_err(g, b))))
 
+plt.plot(i, err_f_n, color="blue", label="newton")
 plt.plot(j, err_f_b, color="red", label="bisect")
-plt.plot(j, err_f_n, color="blue", label="newton")
 plt.legend()
 
 f.savefig("speed_conv_f.pgf")
+
+# experiments
+
+ns = list(alg.newton(g, dgdx, 1))
+bs = list(alg.bisect(g, (1, 5)))
+
+# define the limit as the last
+# iteration of newtons method.
+L = ns[-1]
+
+ns_err = (abs(xn - L) for xn in ns)
+bs_err = (abs(xn - L) for xn in bs)
+
+i, errs_newton = zip(*list(enumerate(ns_err)))
+j, errs_bisect = zip(*list(enumerate(bs_err)))
+
+
+# experiment for bisection
+mu = 0.5
+e0 = 10
+es = list(alg.fpi(lambda en: mu * en, e0))
+
+e02 = 10E-4
+es2 = list(alg.fpi(lambda en: mu * en, e02))
+
+abscisse = np.linspace(0, 100, num=len(es))
+
+f = plt.figure()
+plt.yscale("log")
+
+plt.plot(j, errs_bisect, color="red", label="bisect")
+
+plt.plot(
+        abscisse,
+        es,
+        color="gray",
+        label="$\\big\\{\epsilon_n\\big\\}(10)$"
+)
+
+plt.plot(
+        abscisse,
+        es2,
+        "--",
+        color="gray",
+        label="$\\big\\{\epsilon_n\\big\\}\\left(10^{-4}\\right)$"
+)
+
+plt.legend()
+
+f.savefig("exp_bisect.pgf")
+
+
+# expiriment for newton method
+f = plt.figure()
+plt.yscale("log")
+plt.ylim(10E-20, 10E0)
+plt.xlim(0, 15)
+
+print(errs_newton)
+
+nu = 9/10
+ds1 = list(alg.fpi(lambda x: nu * x**2, 1))
+ds2 = list(alg.fpi(lambda x: nu * x**2, 3/4))
+
+abscisse = np.linspace(0, 100, num=len(ds1))
+
+plt.plot(i, errs_newton, color="blue", label="newton")
+
+plt.plot(
+        abscisse,
+        ds1,
+        color="gray",
+        label="$\\big\\{\delta_n \\big\\} \\left( 1 \\right)$"
+)
+
+plt.plot(
+        abscisse,
+        ds2,
+        "--",
+        color="gray",
+        label="$\\big\\{\delta_n \\big\\}\\left(3/4\\right)$"
+)
+
+plt.legend()
+
+f.savefig("exp_newton.pgf")
+
