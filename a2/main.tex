@@ -1,0 +1,49 @@
+\documentclass[12pt]{article}
+
+\input{setup}
+
+\newcommand{\subtask}[1]{{\bf #1.}}
+
+\definecolor{Themecolor}{HTML}{C1DCBD}
+
+\begin{document}
+\begin{titlepage}
+    \pagecolor{Themecolor}
+    \newgeometry{inner=0pt, outer=0pt}
+    \afterpage{
+        \nopagecolor
+        \restoregeometry
+    }
+    \begin{center}
+        {\large\fontspec{Gill Sans}\addfontfeature{LetterSpace=20.0}STEFFEN HAUG}\\[2em]
+        {\Huge\it Numerical Methods}
+        \vfill
+        {\ttfamily Assignment 2}
+    \end{center}
+\end{titlepage}
+
+\begin{multicols}{2}
+
+
+    \section*{Problem 2}
+
+    \begin{figure}[H]
+        \centering
+        \includestandalone[width=0.9\columnwidth]{omega}
+        \caption{
+            Discretization of $\Omega$.
+        }
+    \end{figure}
+
+
+    \begin{figure}[H]
+        \centering
+        \includestandalone[width=0.9\columnwidth]{plot_fxy}
+        \caption{
+            $f(x, y)$ for values in $\Omega$.
+        }
+    \end{figure}
+    \noindent
+
+\end{multicols}
+\end{document}
