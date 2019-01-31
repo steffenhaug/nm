@@ -5,10 +5,9 @@
 \usetikzlibrary{decorations.pathreplacing,angles,quotes}
 \usetikzlibrary{shapes.geometric,shapes.misc}
 
-
-    \draw[->]
+    \draw[->,line width = 0.15mm]
         (0, 0) -- node[below] {\scriptsize $\hat x$} (2.2, 0);
-    \draw[->]
+    \draw[->,line width = 0.15mm]
         (0, 0) -- node[left] {\scriptsize $\hat y$} (0, 2.2);
 
     \draw[line width = 0.1mm]
@@ -31,13 +30,6 @@
     \foreach \x in {0,...,10}
     \foreach \y in {0,...,10}
         \draw[fill] (0.2*\x, 0.2*\y) circle (0.005);
-
-    %\draw[
-        %thick,
-        %decoration={brace,raise=5pt},
-        %decorate
-    %] (2, 0) -- node[right=5pt] {\scriptsize\scshape Submerged}
-      %(2, -7/6);
 
 \end{tikzpicture}
 \end{document}

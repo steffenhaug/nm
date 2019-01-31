@@ -18,6 +18,7 @@
         {\large\fontspec{Gill Sans}\addfontfeature{LetterSpace=20.0}STEFFEN HAUG}\\[2em]
         {\Huge\it Numerical Methods}
         \vfill
+        \vfill
         {\ttfamily Assignment 2}
     \end{center}
 \end{titlepage}
@@ -25,25 +26,425 @@
 \begin{multicols}{2}
 
 
+    \section*{Problem 1}
+    The goal is to implement Newtons method for a generic function
+    $\vec F: \R^2 \longrightarrow \R^2$.
+    I will use a symbolic computation library to compute the
+    Jacobian $\Jac[\vec F]$, which means the function needs to consist of
+    {\ttfamily sympy}-compatible primitives.
+    Except for this restriction, the functions can be generic.
+    \begin{python}[
+        caption={Helper functions for symbolic manipulation}
+    ]
+# file: src/alg.py
+import numpy as np
+from numpy import linalg as LA
+import sympy as sp
+
+from numpy import linalg as la
+import scipy.sparse as scsp
+
+
+def symbolic_jac(py_fn):
+    # Computes a symbolic jacobian matrix
+    # for a function f : R^2 -> R^2.
+
+    # compute the entries of the vector by
+    # evaluating the function for sp-symbols
+    x, y = sp.symbols('x y')
+    f1, f2 = py_fn(x, y)
+    F  = sp.Matrix([f1, f2])
+
+    return F.jacobian([x, y])
+
+
+def callable_fn(symbolic):
+    # Create a function that substitutes
+    # for the symbolic values.
+    x, y = sp.symbols('x y')
+    return sp.lambdify(
+        [x, y], symbolic, 'numpy'
+    )
+    \end{python}
+    Armed with some auxillary functions to handle the symbolic
+    computation, we implement the iteration using
+    the Newton method equation
+    \[
+        \vec x = \vec x - \Jac[\vec F]^{-1} \vec F(\vec x)
+    \]
+    \begin{python}[caption={Newton's method}]
+# file: src/alg.py
+MAX_ITER = 100
+
+def solve(F, x0, tol=1E-6):
+    x, y = x0
+    assert x + y != 0, "Singular Jacobian!"
+
+    # Compute the jacobian symbolically
+    J  = symbolic_jac(F)
+    # Make a "callable" inverse
+    Ji = callable_fn(J.inv())
+
+    def step(f, Ji_f, r):
+        # computes the next step using
+        # the Newton method equation.
+        return r - Ji_f(*r).dot(f(*r))
+
+
+    for _ in range(MAX_ITER):
+        px, py = x, y
+        x,  y  = step(F, Ji, (x, y))
+        yield x, y
+
+        # check the tolerance criteria
+        if la.norm(F(x, y)) < tol:
+            break
+        if la.norm((x - px, y - py)) < tol:
+            break
+
+def last(it):
+    # run an iterator to the end
+    x = None
+    for x in it: pass
+    return x
+    \end{python}
+    \vspace{-0.5\baselineskip}
+    \begin{python}[frame=b,numbers=none]
+>>> from src.alg import solve, last
+>>> def F(x, y):
+...     return x**2 + y**2 - 2, x - y
+
+>>> solve(F, (-1,0))
+<generator...>
+>>> last(solve(F, (-1,0)))
+(-1.000000000013107, -1.000000000013107)
+>>> last(solve(F, (1,0)))
+(1.000000000013107, 1.000000000013107)
+    \end{python}
+    The interactive session shows how the function can be used,
+    (it may not be so obvious since it is implemented
+    as a generator-function, so we can collect the error {\em from outside};
+    single resposibility principle and so on)
+    and that it is correct at least for two points in different
+    basins of attraction for the equation
+    \[
+        \vec F(x, y) = \begin{pmatrix}
+            x^2 + y^2 - 2 \\
+            x - y
+        \end{pmatrix} \,\text,
+    \]
+    which has its true roots in $(-1, -1)$ and $(1, 1)$.
+
+    \subsection*{Quadratic convergence}
+    We want to verify that Newtons method converges quadratically,
+    also in the multivariable case.
+    To see this, we want to evaluate the limit
+    \[
+        \mu = \lim_{n \longrightarrow \infty}
+            \frac{\Norm[2]{\vec x_{n+1} - \vec x_n}}
+                 {\Norm[2]{\vec x_n - \vec x_{n-1}}^2}
+        \,\text.
+    \]
+    Obviously, we don't have an infinite number of terms of $\Seq{\vec x_n}$.
+    The best we can do is approximate $\mu$ by the ratios of our finite sequence.
+    \begin{python}[
+        caption={Computing the sequence of ratios}
+    ]
+approx = list(solve(F, (1000, 0), tol=1E-15))
+
+def pairs(L):
+    yield from zip(L[1:], L)
+
+def diffs(L):
+    for (xn, yn), (xm, ym) in pairs(L):
+        yield (xn - xm, yn - ym)
+
+def norms(vs):
+        for v in vs: yield LA.norm(v)
+
+norms_of_diffs = list(norms(diffs(approx)))
+
+for p, q in pairs(norms_of_diffs):
+    print(p/q**2)
+    \end{python}
+Which produces the following values.
+Note that we need to use a very low tolerance,
+otherwise we will not see anything resembling convergence at all.
+    \begin{table}[H]
+        \centering
+        \caption{The sequence $\Seq{\mu_n}$ of ratios of error.}
+        \begin{tabular}{c S[table-format=1.6]}
+            \hline\hline
+            \bfseries Iteration & $\mu_n$ \\
+            \hline
+            1  & 0.001414\\
+            2  & 0.002828\\
+            3  & 0.005656\\
+            4  & 0.011309\\
+            5  & 0.022596\\
+            6  & 0.045009\\
+            7  & 0.088582\\
+            8  & 0.166701\\
+            9  & 0.272763\\
+            10 & 0.341980\\
+            11 & 0.353357\\
+            12 & 0.353553\\
+            13 & 0.354073\\
+            \hline
+        \end{tabular}
+    \end{table}\noindent
+    It seems like the sequence settles on $\mu \approx 0.35$,
+    which indicates quadratic convergence.
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\columnwidth]{f_norms}
+        \caption{
+            Convergence of Newton's method with the norm $\Norm[2]{\vec F(x, y)}$
+        }
+        \label{fig:f_norms}
+    \end{figure}\noindent
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\columnwidth]{diff_norms}
+        \caption{
+            Convergence of Newton's method with the norm
+            $\Norm[2]{\vec x_{k+1} - \vec x_k }$
+        }
+        \label{fig:diff_norms}
+    \end{figure}\noindent
+
+
+    \section*{Optional problem}
+
+
+
     \section*{Problem 2}
+    We want to consider the linear system
+    \[
+        A \vec u = \vec f \,\text,
+    \]
+    where
+    \[
+        A = \left(
+            L + (\Delta x)^2 k^2 I
+        \right)
+    \]
+    is a matrix in $\R^{{n^2} \times\, {n^2}}$,
+    and $\Delta x = 1/n$. Notice that $A$ is an operator
+    that operates on vectors in $\R^{n^2}$, corresponding to
+    an $n \times n$ lattice in a domain $\Omega$:
 
     \begin{figure}[H]
         \centering
         \includestandalone[width=0.9\columnwidth]{omega}
         \caption{
-            Discretization of $\Omega$.
+            Lattice points in $\Omega$.
         }
-    \end{figure}
-
-
+        \label{fig:omega}
+    \end{figure}\noindent
+    For any function $f(x, y)$ defined on $\Omega$, we can let
+    \[
+        \vec f = \begin{pmatrix}
+            f_1 & f_2 & \cdots & f_l & \cdots & f_{n^2}
+        \end{pmatrix}
+        \,\text; \quad
+        f_l = f(x_i, y_i) \,\text,
+    \]
+    where
+    \[
+        \left\{\begin{array}{l}
+            x_i = i \cdot \Delta x \\
+            y_j = j \cdot \Delta x \\
+            l = \left(j - 1\right)n + i \\
+        \end{array}\right.
+    \]
+    which corresponds exactly to ``sampling'' $f$ at the lattice points:
+    $x(i)$ and $y(j)$ maps integer indeces $i$ and $j$ to lattice points.
+    $l = l(i,j)$ maps the same indeces to an index into a vector in $\R^{n^2}$.
+    Thus, there is a bijective correspondance between lattice points
+    and vector components.
+    If we consider a concrete function
+    \[
+        f(x, y) \coloneqq \exp{\left(
+            -50 \left(
+                \left(x - \frac{1}{2}\right)
+                + \left(y - \frac{1}{2}\right)
+            \right)
+        \right)}
+    \]
+    defined on $\Omega$, the sampled data looks something like
+    \Fig{sample} for a low choice of $n$.
     \begin{figure}[H]
         \centering
         \includestandalone[width=0.9\columnwidth]{plot_fxy}
         \caption{
-            $f(x, y)$ for values in $\Omega$.
+            $f(x, y)$ sampled across the lattice in $\Omega$.
         }
-    \end{figure}
-    \noindent
+        \label{fig:sample}
+    \end{figure}\noindent
+    This sampling can be done succinctly in python, using
+    a generator function:
+    \begin{python}[
+        caption={Program to sample functions over lattices}
+    ]
+def lattice(n):
+    for j in range(n):
+        for i in range(n):
+            yield i/(n - 1), j/(n - 1)
 
+def sample(F, n):
+    # samples F over a n x n lattice.
+    return np.array(
+        [F(x,y) for x, y in lattice(n)]
+    )
+    \end{python}
+    {\tt sample(F, n)} produces exactly the vector $\vec f$,
+    for a given function {\tt F}, sampled over a lattice
+    in $\Omega$ with $\Delta x = 1/n$.
+
+    To solve the system $A\vec u = \vec f$, we want to use
+    fix-point iteration:
+    \begin{align*}
+        A \vec u &= \vec f \\
+        (M - N) \vec u &= \vec f \\
+        M \vec u &= N \vec u + f \\
+        \vec u &= M^{-1} (N \vec u + \vec f)
+    \end{align*}
+    in this equation, $M^{-1}N$ and $M^{-1}\vec f$ are constants.
+    It is sensible to compute them once up-front and give them
+    names.
+    This gives the more orderly equation
+    \[
+        \vec u = C\vec u + \vec g \,\text.
+    \]
+    Which converges by the Banach fixed-point theorem if
+    $\vec x \mapsto C\vec x + \vec g$ is a contraction,
+    which is the case as long as the spectral radius of
+    $C$, $\rho(C) < 1$.
+    In python, this can be implemented as follows
+    \begin{python}[
+        caption={N-dimensional solver.}
+    ]
+def spectral_radius(M):
+    return np.max(np.abs(LA.eigvals(M)))
+
+def solve_nd_fpi(M, N, f, tol=1E-6):
+    # solves the linear system (M - N)x = f by
+    # fix-point iteration x = inv(M)(Nx + b).
+
+    # Compute inv(M), C and f
+    Mi = LA.inv(M)
+    C = Mi.dot(N)
+    g = Mi.dot(f)
+
+    assert spectral_radius(C) < 1, "rho(C) > 1"
+
+    x = g
+    for _ in range(MAX_ITER):
+        x = C.dot(x) + b
+
+    return x
+    \end{python}
+    provided we already have a choice of $M$ and $N$.
+    Several ways to choose these matrices are possible,
+    and we want to be able to choose.
+    \begin{python}[
+        caption={Argument-``parser'' and choice of $M$, $N$.}
+    ]
+def solve_nd(A, b, tol=1E-6,
+        method="jacobi", omega=1):
+    # solve Ax = b.
+    # omega is only used if you choose
+    # the method successive over-relaxation
+
+    def jacobi_mat(A):
+        # Jacobi method
+        M = np.diag(A.diagonal())
+        N = M - A
+        return M, N
+
+    def gs_mat(A):
+        # Gauss-Seidel
+        M = np.tril(A)
+        N = M - A
+        return M, N
+
+    def sor_mat(A, omega):
+        # successive over-relaxation
+        D = np.diag(A.diagonal())
+        L = np.tril(A, k=-1)
+        M = D + omega*L
+        N = M - A
+        return M, N
+
+    # pick a method based on parameter.
+    # i have included some redundant parameters
+    # so it is possible to write "shorthand"
+    M, N = {
+        "jacobi":        jacobi_mat,
+        "j":             jacobi_mat,
+        "gauss-seidel":  gs_mat,
+        "gs":            gs_mat,
+        "sor": lambda A: sor_mat(A, omega),
+    }[method.lower()](A)
+
+    x = solve_nd_fpi(M, N, b, tol=tol)
+
+    return x
+    \end{python}
+    Now, given some matrix $A$, and some vector $\vec b$,
+    we can solve the system $A\vec x = \vec b$.
+
+    \subsection*{Testing the solver for a trivial problem}
+    We want to make sure our code is correct by first
+    solving a simple system, which we know has a solution,
+    such as
+    \[
+        \arraycolsep=1.4pt\def\arraystretch{1}
+        \left\{\begin{array}{rcrcr}
+            3x &-&  y &=&  1 \\
+            2x &+& 2y &=&  0 \\
+        \end{array}\right.
+    \]
+    \begin{python}
+>>> from src.alg import solve_nd
+>>> import numpy as np
+
+>>> A = np.array([[3, -1],
+...               [2,  2]])
+
+>>> b = np.array([1, 0])
+
+>>> solve_nd(A, b, method="Jacobi")
+array([ 0.25, -0.25])
+>>> solve_nd(A, b, method="Gauss-Seidel")
+array([ 0.25, -0.25])
+>>> solve_nd(A, b, method="SOR")
+array([ 0.25, -0.25])
+    \end{python}
+    As we can see, all the methods give the correct solution.
+
+    \subsection*{Solving the original problem}
+
+    We can find a solution to our original problem,
+    fixing $n = 10$ and $k = 1/100$, by
+    \begin{python}
+from src.alg import solve_nd, sample
+from asc.alg import A as gen_A
+import numpy as np
+
+n = 10
+k = 1/100
+
+def F(x,y):
+    return np.exp(-50 * ((x - 1/2)**2 + (y - 1/2)**2))
+
+f = sample(F, n)
+A = gen_A(k, n)
+
+u = solve_nd(A, f)
+    \end{python}
+    Here, {\tt src.alg.A} is an algorithm provided for us that generates $A$.
 \end{multicols}
 \end{document}

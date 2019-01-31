@@ -8,17 +8,25 @@
 \usepackage[style=phys]{biblatex}
 \usepackage{scalerel}
 
-\usepackage{amsmath}
-\usepackage{amsfonts}
-\usepackage{mathtools}
-\usepackage{fourier}
+\usepackage{mathtools} % coloneqq
+\usepackage{siunitx}
+\usepackage{textcomp}
 
-\usepackage{xltxtra}
+\usepackage{unicode-math}
+
+% Get mathbb and mathcal back (unicode-math replaces them)
+\DeclareMathAlphabet{\mathcal}{OMS}{cmsy}{m}{n}
+\let\mathbb\relax % remove the definition by unicode-math
+\DeclareMathAlphabet{\mathbb}{U}{msb}{m}{n}
+
 \setmainfont{EB Garamond}
 \setmonofont{Courier New}
+\setmathfont{STIX Two Math}
+
 
 % Custom Commands
 % ---------------
+\let\vec\mathbf
 \newcommand{\deldel}[2]{\frac{\partial #1}{\partial #2}}
 \newcommand{\dd}[2]{\frac{\mathrm d #1}{\mathrm d #2}}
 \newcommand{\textdd}[2]{{\mathrm d #1}/{\mathrm d #2}}
@@ -30,8 +38,13 @@
 \newcommand{\Diam}{\mathrm{diam}}
 \newcommand{\D}{\mathrm{d}}
 
-\newcommand{\R}{\mathbf{R}}
-\newcommand{\N}{\mathbf{N}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+
+\newcommand{\Norm}[2][]{\left\lVert#2\right\rVert_{#1}}
+\newcommand{\Jac}[1][]{\mathbf{J}_{#1}}
+
+\newcommand{\Fig}[1]{\mbox{\scshape figure \ref{fig:#1}}}
 
 \DeclareMathOperator*{\Sub}{\scalerel*{\Bigg\vert}{\int}}
 
@@ -52,7 +65,7 @@
 \titleformat{name=\subsection,numberless}[block]{\filcenter\large\scshape}{}{0pt}{}
 \titleformat{name=\subsection}[block]{\filcenter\large\scshape}{\thesubsection.}{5pt}{}
 
-
+\usepackage{moresize}
 \usepackage{abstract}
 \usepackage{appendix}
 
@@ -104,8 +117,9 @@
 \usepackage{enumitem}
 \setlist[itemize]{noitemsep}
 
-
+% -- LISTINGS --
 \usepackage{listings}
+% Options for all coding environments
 \lstset{
     basicstyle=\scriptsize\ttfamily
 }
@@ -114,15 +128,26 @@
     framexleftmargin=2.5em,
     numbers=left,
     xleftmargin=2.5em,
+    showstringspaces=false,
 }
 
-\usepackage{bm}
-\usepackage{amsmath}
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{mathtools}
-\usepackage{siunitx}
-\usepackage{textcomp}
+% The built-in python highlighter is for python2,
+% so we need to modify it:
+\newcommand\pythonstyle{\lstset{
+language=Python,
+morekeywords={self, yield, as, assert, pass},
+}}
+
+% python env.
+\lstnewenvironment{python}[1][]
+{
+\pythonstyle
+\lstset{#1}
+}
+{}
+
+% inline pytohn env.
+\newcommand\pythoninline[1]{{\pythonstyle\lstinline!#1!}}
 
 \usepackage{xcolor}
 \usepackage{tikz}

@@ -31,9 +31,8 @@ def callable_fn(symbolic):
 
 def solve(F, x0, tol=1E-6):
 
-    px, py = x0 # "previous x and y"
-
-    assert px + py != 0, "Invalid starting point; singular Jacobian!"
+    x, y = x0
+    assert x + y != 0, "Invalid starting point; singular Jacobian!"
 
     # compute the jacobian symbolically,
     # and create a callable version of
@@ -41,7 +40,7 @@ def solve(F, x0, tol=1E-6):
     J  = symbolic_jac(F)
     Ji = callable_fn(J.inv())
 
-    def newton_step(f, Ji_f, r):
+    def step(f, Ji_f, r):
         # computes the next iteration using the
         # Newton method equation.
         # f : R2 -> R2,
@@ -49,19 +48,24 @@ def solve(F, x0, tol=1E-6):
         # r is the previous step
         return r - Ji_f(*r).dot(f(*r))
 
-    x, y = newton_step(F, Ji, x0)
 
     for _ in range(MAX_ITER):
+        px, py = x, y
+        x,  y  = step(F, Ji, (x, y))
+        yield x, y
+
         # check the tolerance criteria
         if la.norm(F(x, y)) < tol:
             break
         if la.norm((x - px, y - py)) < tol:
             break
 
-        px, py = x, y
-        x, y  = newton_step(F, Ji, (x, y))
+def last(it):
+    # run an iterator to the end
+    x = None
+    for x in it: pass
+    return x
 
-    return x, y
 
 def A(k, n):
     B = scsp.diags([1, -4, 1], [-1, 0, 1], shape=(n, n))
@@ -70,41 +74,80 @@ def A(k, n):
     L = scsp.kron(I, B) + upperones
 
     dx = 1/n
-    
-    A = L + dx**2*k**2*scsp.eye(n**2)
+
+    A = L + dx**2 * k**2 * scsp.eye(n**2)
 
     return A.toarray()
 
-def rho(M):
-    # compute the spectral radius of a matrix
-    #   rho(M) = max |l_i|
-    #         0 <= i < n
-    # where l_i is eigenvalue number i.
+def spectral_radius(M):
     return np.max(np.abs(LA.eigvals(M)))
 
-def solve_nd_fpi(M, N, b, tol=1E-6):
-    # assumes M, N are numpy arrays.
-    # solves the linear system Ax = b by iteration:
-    #   Ax = b
-    #   (M - N)x = b
-    #   Mx = Nx + b
-    #   x = inv(M)(Nx + b)
-    # is a contraction if C = inv(M)N has spectral radius
-    # rho(C) < 1 by the banach fixed point theorem. obviously
-    # we need to have A = M - N.
+def solve_nd_fpi(M, N, f, tol=1E-6):
+    # solves the linear system (M - N)x = b by
+    # fix-point iteration x = inv(M)(Nx + b).
 
-    # Compute C and f
-    Mi = np.invert(M)
-    C = Mi * N
-    f = Mi * b
+    # Compute inv(M), C and f
+    Mi = LA.inv(M)
+    C = Mi.dot(N)
+    g = Mi.dot(f)
 
-    assert rho(C) < 1, "Iteration diverges!"
+    assert spectral_radius(C) < 1, "Spectral radius is too big!"
 
-    def g(C, f, x):
-        # compute one step of the iteration
-        return C*x + f
+    x = g
+    for _ in range(MAX_ITER):
+        x = C.dot(x) + g
 
-    
-    x = g(C, f, b)
+    return x
 
+def solve_nd(A, b, tol=1E-6, method="jacobi", omega=1):
+    # solve Ax = b
+    # omega is only relevant if you choose
+    # the method successive over-relaxation
 
+    def jacobi_mat(A):
+        # Jacobi method
+        M = np.diag(A.diagonal())
+        N = M - A
+        return M, N
+
+    def gs_mat(A):
+        # Gauss-Seidel
+        M = np.tril(A)
+        N = M - A
+        return M, N
+
+    def sor_mat(A, omega):
+        # successive over-relaxation
+        D = np.diag(A.diagonal())
+        L = np.tril(A, k=-1)
+        M = D + omega*L
+        N = M - A
+        return M, N
+
+    # pick a method based on parameter
+    # i have included some redundant parameters
+    # so it is possible to write "shorthand"
+    M, N = {
+        "jacobi":        jacobi_mat,
+        "j":             jacobi_mat,
+        "gauss-seidel":  gs_mat,
+        "gs":            gs_mat,
+        "sor": lambda A: sor_mat(A, omega),
+    }[method.lower()](A)
+
+    x = solve_nd_fpi(M, N, b, tol=tol)
+
+    return x
+
+def lattice(n):
+    # produces a sequence of n^2 points
+    # in an n x n lattice over the domain
+    #   omega = [0, 1] x [0, 1],
+    # including the .
+    for j in range(n):
+        for i in range(n):
+            yield i/(n - 1), j/(n - 1)
+
+def sample(F, n):
+    # samples F over a n x n lattice.
+    return np.array([F(x,y) for x, y in lattice(n)])
