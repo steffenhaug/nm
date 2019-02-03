@@ -197,7 +197,7 @@ otherwise we will not see anything resembling convergence at all.
     which indicates quadratic convergence.
     \begin{figure}[H]
         \centering
-        \includegraphics[width=\columnwidth]{f_norms}
+        \includegraphics[width=0.75\columnwidth]{f_norms}
         \caption{
             Convergence of Newton's method with the norm $\Norm[2]{\vec F(x, y)}$
         }
@@ -206,14 +206,27 @@ otherwise we will not see anything resembling convergence at all.
 
     \begin{figure}[H]
         \centering
-        \includegraphics[width=\columnwidth]{diff_norms}
+        \includegraphics[width=0.75\columnwidth]{diff_norms}
         \caption{
             Convergence of Newton's method with the norm
             $\Norm[2]{\vec x_{k+1} - \vec x_k }$
         }
         \label{fig:diff_norms}
     \end{figure}\noindent
+    The figures indicate that the convergence is at least superlinear.
+    It is not easy to read from an image exacly how fast the convergence is,
+    but with the estimated $\mu$, quadratic convergence seems likely.
 
+    \subsection*{Convergence along diagonals}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\columnwidth]{conv_pn}
+        \caption{
+            Convergence of Newton's method along the line $x = y$,
+            starting at $\vec x = (-50, 0)$ and $\vec x = (50, 0)$.
+        }
+        \label{fig:diff_norms}
+    \end{figure}\noindent
 
     \section*{Optional problem}
 
@@ -260,8 +273,10 @@ otherwise we will not see anything resembling convergence at all.
         \end{array}\right.
     \]
     which corresponds exactly to ``sampling'' $f$ at the lattice points:
-    $x(i)$ and $y(j)$ maps integer indeces $i$ and $j$ to lattice points.
-    $l = l(i,j)$ maps the same indeces to an index into a vector in $\R^{n^2}$.
+    $x_i = x_i(i)$ and $y_j = y_j(j)$ maps integer indeces $i$ and $j$
+    to lattice points bijectively.
+    $l = l(i,j)$ maps the same indeces to an index into a vector in $\R^{n^2}$
+    bijectively.
     Thus, there is a bijective correspondance between lattice points
     and vector components.
     If we consider a concrete function
@@ -274,7 +289,7 @@ otherwise we will not see anything resembling convergence at all.
         \right)}
     \]
     defined on $\Omega$, the sampled data looks something like
-    \Fig{sample} for a low choice of $n$.
+    \Fig{sample} for a relatively low choice of $n$.
     \begin{figure}[H]
         \centering
         \includestandalone[width=0.9\columnwidth]{plot_fxy}
@@ -308,20 +323,19 @@ def sample(F, n):
     \begin{align*}
         A \vec u &= \vec f \\
         (M - N) \vec u &= \vec f \\
-        M \vec u &= N \vec u + f \\
+        M \vec u &= N \vec u + \vec f \\
         \vec u &= M^{-1} (N \vec u + \vec f)
     \end{align*}
     in this equation, $M^{-1}N$ and $M^{-1}\vec f$ are constants.
-    It is sensible to compute them once up-front and give them
+    It is sensible (and more efficient) to compute them once up-front and give them
     names.
-    This gives the more orderly equation
+    This gives the more orderly iteration
     \[
-        \vec u = C\vec u + \vec g \,\text.
+        \vec u \leftarrow C\vec u + \vec g \,\text.
     \]
     Which converges by the Banach fixed-point theorem if
     $\vec x \mapsto C\vec x + \vec g$ is a contraction,
-    which is the case as long as the spectral radius of
-    $C$, $\rho(C) < 1$.
+    which is the case as long as $\rho(C) < 1$.
     In python, this can be implemented as follows
     \begin{python}[
         caption={N-dimensional solver.}
@@ -397,8 +411,10 @@ def solve_nd(A, b, tol=1E-6,
     we can solve the system $A\vec x = \vec b$.
 
     \subsection*{Testing the solver for a trivial problem}
-    We want to make sure our code is correct by first
-    solving a simple system, which we know has a solution,
+    We want to make sure our code is correct for a simple problem,
+    just so that we can have {\em some} confidence that it actually
+    works.
+    Solving a simple system, which we know has a solution,
     such as
     \[
         \arraycolsep=1.4pt\def\arraystretch{1}
@@ -407,6 +423,8 @@ def solve_nd(A, b, tol=1E-6,
             2x &+& 2y &=&  0 \\
         \end{array}\right.
     \]
+    would give us a good hint about possible errors we might have made.
+    (By insertion it is easy to verify that $x = 1/4$ and $y = -1/4$ is a solution)
     \begin{python}
 >>> from src.alg import solve_nd
 >>> import numpy as np
@@ -438,7 +456,9 @@ n = 10
 k = 1/100
 
 def F(x,y):
-    return np.exp(-50 * ((x - 1/2)**2 + (y - 1/2)**2))
+    return np.exp(
+        -50 * ((x - 1/2)**2 + (y - 1/2)**2)
+    )
 
 f = sample(F, n)
 A = gen_A(k, n)
@@ -446,5 +466,8 @@ A = gen_A(k, n)
 u = solve_nd(A, f)
     \end{python}
     Here, {\tt src.alg.A} is an algorithm provided for us that generates $A$.
+    {\tt f} is the vector obtained when sampling
+    \mbox{{\tt F} $\coloneqq f(x, y)$} across the lattice defined by $n = 10$.
+    The {\tt sample}-function is the same one we developed earlier.
 \end{multicols}
 \end{document}
