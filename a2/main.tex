@@ -4,20 +4,34 @@
 
 \newcommand{\subtask}[1]{{\bf #1.}}
 
-\definecolor{Themecolor}{HTML}{C1DCBD}
+\definecolor{ThemeBG}{HTML}{C1DCBD}
+\definecolor{ThemeFrame}{HTML}{000000}
+
+
+\usepackage[firstpage=true]{background}
 
 \begin{document}
 \begin{titlepage}
-    \pagecolor{Themecolor}
-    \newgeometry{inner=0pt, outer=0pt}
-    \afterpage{
-        \nopagecolor
-        \restoregeometry
+    \backgroundsetup{
+        scale = 2, angle = 15, opacity = 1.0,
+        contents = {
+            \includegraphics[
+                width  = \paperwidth,
+                height = \paperheight,
+                keepaspectratio]{hires.pdf}
+        }
     }
+    \newgeometry{inner=0pt, outer=0pt}
     \begin{center}
-        {\large\fontspec{Gill Sans}\addfontfeature{LetterSpace=20.0}STEFFEN HAUG}\\[2em]
-        {\Huge\it Numerical Methods}
-        \vfill
+        \noindent\fcolorbox{ThemeFrame}{ThemeBG}{
+            \parbox{0.5\textwidth}{
+                \begin{center}
+                    {\large\fontspec{Gill Sans}
+                    \addfontfeature{LetterSpace=20.0}STEFFEN HAUG}\\[2em]
+                    {\Huge\it Numerical Methods}\\[4em]
+                \end{center}
+            }
+        }
         \vfill
         {\ttfamily Assignment 2}
     \end{center}
@@ -40,8 +54,6 @@
 import numpy as np
 from numpy import linalg as LA
 import sympy as sp
-
-from numpy import linalg as la
 import scipy.sparse as scsp
 
 
@@ -78,18 +90,21 @@ MAX_ITER = 100
 
 def solve(F, x0, tol=1E-6):
     x, y = x0
-    assert x + y != 0, "Singular Jacobian!"
 
-    # Compute the jacobian symbolically
     J  = symbolic_jac(F)
-    # Make a "callable" inverse
+
+    # singular jacobian means trouble
+    Jfn = callable_fn(J)
+    assert LA.det(Jfn(x, y)) != 0
+
+    # function-version of the Jacobian
     Ji = callable_fn(J.inv())
 
-    def step(f, Ji_f, r):
-        # computes the next step using
-        # the Newton method equation.
-        return r - Ji_f(*r).dot(f(*r))
-
+    def step(f, Ji_f, x):
+        # computes the next iteration using the
+        # Newton method equation.
+        # r is the previous step
+        return x - Ji_f(*x).dot(f(*x))
 
     for _ in range(MAX_ITER):
         px, py = x, y
@@ -97,9 +112,9 @@ def solve(F, x0, tol=1E-6):
         yield x, y
 
         # check the tolerance criteria
-        if la.norm(F(x, y)) < tol:
+        if LA.norm(F(x, y)) < tol:
             break
-        if la.norm((x - px, y - py)) < tol:
+        if LA.norm((x - px, y - py)) < tol:
             break
 
 def last(it):
@@ -218,18 +233,44 @@ otherwise we will not see anything resembling convergence at all.
     but with the estimated $\mu$, quadratic convergence seems likely.
 
     \subsection*{Convergence along diagonals}
+    We want to see what happens as the method converges for
+    two initial guesses that converges to different solutions.
     \begin{figure}[H]
         \centering
-        \includegraphics[width=\columnwidth]{conv_pn}
+        \includegraphics[width=0.75\columnwidth]{conv_pn}
         \caption{
             Convergence of Newton's method along the line $x = y$,
             starting at $\vec x = (-50, 0)$ and $\vec x = (50, 0)$.
         }
-        \label{fig:diff_norms}
+        \label{fig:conv_pn}
     \end{figure}\noindent
+    As we can see, the solutions instantly ``jump'' to the
+    $x = y$ diagonal, and converges along it.
+
 
     \section*{Optional problem}
+    Given
+    \[
+        f(z) = z^3 - 1
+    \]
+    as a function $f: \C \longrightarrow \C$, we want to inspect the basins
+    of attraction for Newton's mehod.
+    We can view $f$ as a function $f: \R^2 \longrightarrow \R^2$ instead,
+    and use the solver we already have.
 
+    For every point in the complex plane, we are interested in which
+    of the three roots Newton's method converges to.
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.75\columnwidth]{basins_rev}
+        \caption{
+            Basins of attraction for Newton's method applied on
+            $f(z) = z^3 - 1$.
+        }
+        \label{fig:basins}
+    \end{figure}\noindent
+    \Fig{basins} shows how the convergence forms three ``basins'' in
+    a beautiful fractal pattern.
 
 
     \section*{Problem 2}
@@ -331,34 +372,39 @@ def sample(F, n):
     names.
     This gives the more orderly iteration
     \[
-        \vec u \leftarrow C\vec u + \vec g \,\text.
+        \vec u \leftarrow C\vec u + \vec g \,\text,
     \]
-    Which converges by the Banach fixed-point theorem if
-    $\vec x \mapsto C\vec x + \vec g$ is a contraction,
-    which is the case as long as $\rho(C) < 1$.
+    which converges by the Banach fixed-point theorem if
+    $\vec x \mapsto C\vec u + \vec g$ is a contraction,
+    which is the case as long as
+    \[
+        0 < \rho(C) \coloneqq \smashoperator{
+            \max_{\lambda \text{ eig. of } C}
+        } \lambda < 1
+        \text.
+    \]
     In python, this can be implemented as follows
     \begin{python}[
         caption={N-dimensional solver.}
     ]
+# src/alg.py
 def spectral_radius(M):
     return np.max(np.abs(LA.eigvals(M)))
 
-def solve_nd_fpi(M, N, f, tol=1E-6):
-    # solves the linear system (M - N)x = f by
-    # fix-point iteration x = inv(M)(Nx + b).
+def solve_nd_fpi(M, N, f):
+    # solves the linear system (M - N)u = b by
+    # fix-point iteration u = inv(M)(Nu + b).
 
-    # Compute inv(M), C and f
     Mi = LA.inv(M)
-    C = Mi.dot(N)
-    g = Mi.dot(f)
+    C  = Mi.dot(N)
+    g  = Mi.dot(f)
 
-    assert spectral_radius(C) < 1, "rho(C) > 1"
+    assert spectral_radius(C) < 1
 
-    x = g
+    u = g
     for _ in range(MAX_ITER):
-        x = C.dot(x) + b
-
-    return x
+        u = C.dot(u) + g
+        yield u
     \end{python}
     provided we already have a choice of $M$ and $N$.
     Several ways to choose these matrices are possible,
@@ -366,49 +412,72 @@ def solve_nd_fpi(M, N, f, tol=1E-6):
     \begin{python}[
         caption={Argument-``parser'' and choice of $M$, $N$.}
     ]
-def solve_nd(A, b, tol=1E-6,
-        method="jacobi", omega=1):
-    # solve Ax = b.
-    # omega is only used if you choose
-    # the method successive over-relaxation
+# src/alg.py
 
-    def jacobi_mat(A):
-        # Jacobi method
-        M = np.diag(A.diagonal())
-        N = M - A
-        return M, N
+def jacobi_mat(A):
+    # Jacobi method
+    M = np.diag(A.diagonal())
+    N = M - A
+    return M, N
 
-    def gs_mat(A):
-        # Gauss-Seidel
-        M = np.tril(A)
-        N = M - A
-        return M, N
+def gs_mat(A):
+    # Gauss-Seidel
+    M = np.tril(A)
+    N = M - A
+    return M, N
 
-    def sor_mat(A, omega):
-        # successive over-relaxation
-        D = np.diag(A.diagonal())
-        L = np.tril(A, k=-1)
-        M = D + omega*L
-        N = M - A
-        return M, N
+def sor_mat(A, omega):
+    # successive over-relaxation
+    D = np.diag(A.diagonal())
+    L = np.tril(A, k=-1)
+    M = D + omega*L
+    N = M - A
+    return M, N
 
-    # pick a method based on parameter.
+def choose_matrices(A, method="jacobi", omega=1.0):
+    # pick a method based on the parameter
     # i have included some redundant parameters
     # so it is possible to write "shorthand"
+    # upper-case also works.
     M, N = {
+        # Jacobi method
         "jacobi":        jacobi_mat,
         "j":             jacobi_mat,
+        # Gauss-Seidel method
         "gauss-seidel":  gs_mat,
         "gs":            gs_mat,
+        # Successive over-relaxation
         "sor": lambda A: sor_mat(A, omega),
     }[method.lower()](A)
 
-    x = solve_nd_fpi(M, N, b, tol=tol)
+    return M, N
 
-    return x
+
+def solve_nd(A, f, method="jacobi", omega=1.0):
+    # solve Ax = b.
+    # returns an iterator over tuples (u, r),
+    # where u is successively better solutions,
+    # and r is the residual vector.
+    # omega is unused unless "sor" is specified
+
+    M, N = choose_matrices(A, method=method, omega=omega)
+
+    for u in solve_nd_fpi(M, N, f, tol=tol):
+        # compute the residual
+        r = f - A.dot(u)
+        yield u, r
     \end{python}
-    Now, given some matrix $A$, and some vector $\vec b$,
-    we can solve the system $A\vec x = \vec b$.
+    Now, given some matrix $M$, and some vector $\vec b$,
+    we can solve the system $M\vec u = \vec b$.
+    Notice that, again, the system is implemented in such a way that it
+    produces succesively better and better approximations.
+    It also computes a residual vector which it gives us along with
+    each approximation as a tuple {\tt (u, r)}.
+    This makes the API a little clunky if all we want to do is
+    compute the solution of some system, but it makes it easy to
+    work with the data as a sequence.
+    If all we want is the solution, we need the left-hand element of
+    the last tuple.
 
     \subsection*{Testing the solver for a trivial problem}
     We want to make sure our code is correct for a simple problem,
@@ -426,7 +495,8 @@ def solve_nd(A, b, tol=1E-6,
     would give us a good hint about possible errors we might have made.
     (By insertion it is easy to verify that $x = 1/4$ and $y = -1/4$ is a solution)
     \begin{python}
->>> from src.alg import solve_nd
+# interactive session
+>>> from src.alg import solve_nd, last
 >>> import numpy as np
 
 >>> A = np.array([[3, -1],
@@ -434,11 +504,16 @@ def solve_nd(A, b, tol=1E-6,
 
 >>> b = np.array([1, 0])
 
->>> solve_nd(A, b, method="Jacobi")
+>>> u, v = last(solve_nd(A, b, method="Jacobi"))
+>>> u
 array([ 0.25, -0.25])
->>> solve_nd(A, b, method="Gauss-Seidel")
+
+>>> u, v = last(solve_nd(A, b, method="GS"))
+>>> u
 array([ 0.25, -0.25])
->>> solve_nd(A, b, method="SOR")
+
+>>> u, v = last(solve_nd(A, b, method="SOR"))
+>>> u
 array([ 0.25, -0.25])
     \end{python}
     As we can see, all the methods give the correct solution.
@@ -446,7 +521,7 @@ array([ 0.25, -0.25])
     \subsection*{Solving the original problem}
 
     We can find a solution to our original problem,
-    fixing $n = 10$ and $k = 1/100$, by
+    fixing $n = 10$ and $k = 1/100$, by setting up
     \begin{python}
 from src.alg import solve_nd, sample
 from asc.alg import A as gen_A
@@ -462,12 +537,94 @@ def F(x,y):
 
 f = sample(F, n)
 A = gen_A(k, n)
-
-u = solve_nd(A, f)
     \end{python}
     Here, {\tt src.alg.A} is an algorithm provided for us that generates $A$.
     {\tt f} is the vector obtained when sampling
     \mbox{{\tt F} $\coloneqq f(x, y)$} across the lattice defined by $n = 10$.
     The {\tt sample}-function is the same one we developed earlier.
+
+    Given these structures, we are interested in comparing the performance of each of
+    the three methods when solving the system $A \vec u = \vec f$.
+
+    \subsection{Comparing the convergence}
+    We are interested in looking at the relative residual
+    $\Norm[2]{r_n} / \Norm[2]{r_0}$ for each iteration $n$ of the
+    algorithms. These can be computed with the following Python-program:
+    \begin{python}
+def right(it):
+    for _, x in it: yield x
+
+def relative_residual(appr):
+    # we need a list, because
+    # we can't peek iterators
+    assert type(appr) == list
+    a = LA.norm(appr[0][1])
+    for r in right(iter(appr)):
+        yield LA.norm(r) / a
+    \end{python}
+    \Fig{residuals} shows the relative residuals for each of the methods,
+    including three different values for $\omega$ in the case of
+    successive over-relaxation.
+    \begin{figure}[H]
+        \centering
+        \includestandalone[width=0.9\columnwidth]{residual}
+        \caption{
+            The residuals of each method for a given iteration.
+        }
+        \label{fig:residuals}
+    \end{figure}\noindent
+
+
+
+
+    \subsection{Comparing the relative time}
+    \subsection{Spectral radius and convergence}
+    Considering \Fig{residuals},
+    it is quite clear that after a certain number of iterations,
+    the convergence is linear.
+    In hindsight, this is not so surprising.
+    Consider $\vec u$ as a linear combination of an eigen-basis
+    $\beta = \Seq{v_i}$
+    given by the eigenvectors of $C$.
+    Then the operation of $C$ on
+    \[
+        \vec u = \sum_i a_i \cdot v_i
+    \]
+    is to scale each component of $\vec u$ by the corresponding eigenvalue:
+    \begin{align*}
+        C \vec u &= \sum_i \lambda_i \cdot a_i \cdot v_i \\
+        \implies C^n \vec u &= \sum_i \lambda_i^n \cdot a_i \cdot v_i
+        \text.
+    \end{align*}
+    Since $0 < \rho(C) < 1$, each component converges by itself,
+    so the sequence converges in its entirety, but
+    {\em only as fast as the slowest component converges!}
+    Naturally, the slowest converging component converges linearly,
+    with $\mu = \rho(C)$.
+
+    Using Python, we can easily compute the spectral radiuses
+    of the iteration matrices.
+    \begin{table}[H]
+        \centering
+        \caption{The spectral radiuses of the iteration matrices for each method}
+        \begin{tabular}{c S[table-format=1.6]}
+            \hline\hline
+            \bfseries Algorithm & \bfseries Spectral Radius \\
+            \hline
+            Jacobi                      & 3.999999\\
+            Gauss-Seidel                & 3.999999\\
+            S. O. R. $(\omega = 0.25)$  & 3.999999\\
+            S. O. R. $(\omega = 0.50)$  & 3.999999\\
+            S. O. R. $(\omega = 0.75)$  & 3.999999\\
+            \hline
+        \end{tabular}
+        \label{table:rhos}
+    \end{table}\noindent
+    \Tab{rhos} reveals that they all have the same asymptotic rate of convergence.
+
+
+    \subsection{Relation between $k$, $\Delta x$ and convergence}
+
+
 \end{multicols}
 \end{document}

@@ -2,7 +2,6 @@ import numpy as np
 from numpy import linalg as LA
 import sympy as sp
 
-from numpy import linalg as la
 import scipy.sparse as scsp
 
 MAX_ITER = 100
@@ -30,23 +29,22 @@ def callable_fn(symbolic):
 
 
 def solve(F, x0, tol=1E-6):
-
     x, y = x0
-    assert x + y != 0, "Invalid starting point; singular Jacobian!"
 
-    # compute the jacobian symbolically,
-    # and create a callable version of
-    # its inverse.
     J  = symbolic_jac(F)
+
+    # singular jacobian means trouble
+    Jfn = callable_fn(J)
+    assert LA.det(Jfn(x, y)) != 0
+
+    # function-version of the Jacobian
     Ji = callable_fn(J.inv())
 
-    def step(f, Ji_f, r):
+    def step(f, Ji_f, x):
         # computes the next iteration using the
         # Newton method equation.
-        # f : R2 -> R2,
-        # Ji_f is the invers Jacobian of f
         # r is the previous step
-        return r - Ji_f(*r).dot(f(*r))
+        return x - Ji_f(*x).dot(f(*x))
 
 
     for _ in range(MAX_ITER):
@@ -55,9 +53,9 @@ def solve(F, x0, tol=1E-6):
         yield x, y
 
         # check the tolerance criteria
-        if la.norm(F(x, y)) < tol:
+        if LA.norm(F(x, y)) < tol:
             break
-        if la.norm((x - px, y - py)) < tol:
+        if LA.norm((x - px, y - py)) < tol:
             break
 
 def last(it):
@@ -82,7 +80,7 @@ def A(k, n):
 def spectral_radius(M):
     return np.max(np.abs(LA.eigvals(M)))
 
-def solve_nd_fpi(M, N, f, tol=1E-6):
+def solve_nd_fpi(M, N, f):
     # solves the linear system (M - N)x = b by
     # fix-point iteration x = inv(M)(Nx + b).
 
@@ -91,53 +89,14 @@ def solve_nd_fpi(M, N, f, tol=1E-6):
     C = Mi.dot(N)
     g = Mi.dot(f)
 
-    assert spectral_radius(C) < 1, "Spectral radius is too big!"
+    assert spectral_radius(C) < 1
 
-    x = g
+    u = g
     for _ in range(MAX_ITER):
-        x = C.dot(x) + g
+        u = C.dot(u) + g
+        yield u
 
-    return x
 
-def solve_nd(A, b, tol=1E-6, method="jacobi", omega=1):
-    # solve Ax = b
-    # omega is only relevant if you choose
-    # the method successive over-relaxation
-
-    def jacobi_mat(A):
-        # Jacobi method
-        M = np.diag(A.diagonal())
-        N = M - A
-        return M, N
-
-    def gs_mat(A):
-        # Gauss-Seidel
-        M = np.tril(A)
-        N = M - A
-        return M, N
-
-    def sor_mat(A, omega):
-        # successive over-relaxation
-        D = np.diag(A.diagonal())
-        L = np.tril(A, k=-1)
-        M = D + omega*L
-        N = M - A
-        return M, N
-
-    # pick a method based on parameter
-    # i have included some redundant parameters
-    # so it is possible to write "shorthand"
-    M, N = {
-        "jacobi":        jacobi_mat,
-        "j":             jacobi_mat,
-        "gauss-seidel":  gs_mat,
-        "gs":            gs_mat,
-        "sor": lambda A: sor_mat(A, omega),
-    }[method.lower()](A)
-
-    x = solve_nd_fpi(M, N, b, tol=tol)
-
-    return x
 
 def lattice(n):
     # produces a sequence of n^2 points
