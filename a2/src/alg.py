@@ -46,7 +46,6 @@ def solve(F, x0, tol=1E-6):
         # r is the previous step
         return x - Ji_f(*x).dot(f(*x))
 
-
     for _ in range(MAX_ITER):
         px, py = x, y
         x,  y  = step(F, Ji, (x, y))

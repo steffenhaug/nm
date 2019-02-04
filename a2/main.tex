@@ -18,7 +18,7 @@
             \includegraphics[
                 width  = \paperwidth,
                 height = \paperheight,
-                keepaspectratio]{hires.pdf}
+                keepaspectratio]{hires.png}
         }
     }
     \newgeometry{inner=0pt, outer=0pt}
@@ -26,9 +26,11 @@
         \noindent\fcolorbox{ThemeFrame}{ThemeBG}{
             \parbox{0.5\textwidth}{
                 \begin{center}
+                    \vspace{1em}
                     {\large\fontspec{Gill Sans}
                     \addfontfeature{LetterSpace=20.0}STEFFEN HAUG}\\[2em]
-                    {\Huge\it Numerical Methods}\\[4em]
+                    {\Huge\it Numerical Methods}
+                    \vspace{1.618em}
                 \end{center}
             }
         }
@@ -262,7 +264,7 @@ otherwise we will not see anything resembling convergence at all.
     of the three roots Newton's method converges to.
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.75\columnwidth]{basins_rev}
+        \includegraphics[width=0.75\columnwidth]{lores.pdf}
         \caption{
             Basins of attraction for Newton's method applied on
             $f(z) = z^3 - 1$.
@@ -460,7 +462,9 @@ def solve_nd(A, f, method="jacobi", omega=1.0):
     # and r is the residual vector.
     # omega is unused unless "sor" is specified
 
-    M, N = choose_matrices(A, method=method, omega=omega)
+    M, N = choose_matrices(A,
+                           method=method,
+                           omega=omega)
 
     for u in solve_nd_fpi(M, N, f, tol=tol):
         # compute the residual
