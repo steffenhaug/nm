@@ -90,11 +90,68 @@ def solve_nd_fpi(M, N, f):
 
     assert spectral_radius(C) < 1
 
+    print(spectral_radius(C))
+
     u = g
     for _ in range(MAX_ITER):
         u = C.dot(u) + g
         yield u
 
+
+def jacobi_mat(A):
+    # Jacobi method
+    M = np.diag(A.diagonal())
+    N = M - A
+    return M, N
+
+def gs_mat(A):
+    # Gauss-Seidel
+    M = np.tril(A)
+    N = M - A
+    return M, N
+
+def sor_mat(A, omega):
+    # successive over-relaxation
+    D = np.diag(A.diagonal())
+    L = np.tril(A, k=-1)
+    M = D + omega*L
+    N = M - A
+    return M, N
+
+def choose_matrices(A, method="jacobi", omega=1.0):
+    # pick a method based on the parameter
+    # i have included some redundant parameters
+    # so it is possible to write "shorthand"
+    # upper-case also works.
+    M, N = {
+        # Jacobi method
+        "jacobi":        jacobi_mat,
+        "j":             jacobi_mat,
+        # Gauss-Seidel method
+        "gauss-seidel":  gs_mat,
+        "gs":            gs_mat,
+        # Successive over-relaxation
+        "sor": lambda A: sor_mat(A, omega),
+    }[method.lower()](A)
+
+    return M, N
+
+
+def solve_nd(A, f, method="jacobi", omega=1.0):
+    # solve Ax = b.
+    # returns an iterator over tuples (u, r),
+    # where u is successively better solutions,
+    # and r is the residual vector.
+    # omega is unused unless "sor" is specified
+
+    M, N = choose_matrices(A,
+                           method=method,
+                           omega=omega)
+
+    for u in solve_nd_fpi(M, N, f):
+        # compute the residual
+        r = f - A.dot(u)
+        yield u, r
 
 
 def lattice(n):

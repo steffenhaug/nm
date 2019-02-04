@@ -345,7 +345,7 @@ otherwise we will not see anything resembling convergence at all.
     a generator function:
     \begin{python}[
         caption={Program to sample functions over lattices}
-    ]
+   ]
 def lattice(n):
     for j in range(n):
         for i in range(n):
@@ -466,7 +466,7 @@ def solve_nd(A, f, method="jacobi", omega=1.0):
                            method=method,
                            omega=omega)
 
-    for u in solve_nd_fpi(M, N, f, tol=tol):
+    for u in solve_nd_fpi(M, N, f):
         # compute the residual
         r = f - A.dot(u)
         yield u, r
@@ -578,10 +578,6 @@ def relative_residual(appr):
         \label{fig:residuals}
     \end{figure}\noindent
 
-
-
-
-    \subsection{Comparing the relative time}
     \subsection{Spectral radius and convergence}
     Considering \Fig{residuals},
     it is quite clear that after a certain number of iterations,
@@ -615,17 +611,29 @@ def relative_residual(appr):
             \hline\hline
             \bfseries Algorithm & \bfseries Spectral Radius \\
             \hline
-            Jacobi                      & 3.999999\\
-            Gauss-Seidel                & 3.999999\\
-            S. O. R. $(\omega = 0.25)$  & 3.999999\\
-            S. O. R. $(\omega = 0.50)$  & 3.999999\\
-            S. O. R. $(\omega = 0.75)$  & 3.999999\\
+            Jacobi                     & 0.9594 \\
+            Gauss-Seidel               & 0.9206 \\
+            S. O. R. $(\omega = 0.25)$ & 0.9539 \\
+            S. O. R. $(\omega = 0.50)$ & 0.9465 \\
+            S. O. R. $(\omega = 0.75)$ & 0.9362 \\
             \hline
         \end{tabular}
         \label{table:rhos}
     \end{table}\noindent
-    \Tab{rhos} reveals that they all have the same asymptotic rate of convergence.
+    \Tab{rhos} reveals that they all have similar rates of convergence,
+    but the successive over-relaxation method seems to get better as $\omega$
+    increases.
+    This motivates a more systematic search for $\omega$.
 
+    By searching by brute force in $I = [0, 100]$,
+    it is revealed that $\omega \approx 1.6$ gives $\rho \approx 0.74$.
+    This is a promising result, so we search in that general area
+    ($I = [1, 2]$). We find that $\omega \approx 1.5628$ gives
+    $\rho \approx 0.7198$, which is a much faster converging
+    approximation.
+    Specifically, this converges significantly faster than the Gauss-Seidel algorithm.
+
+    \subsection{Comparing the relative time}
 
     \subsection{Relation between $k$, $\Delta x$ and convergence}
 
