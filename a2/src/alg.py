@@ -4,7 +4,7 @@ import sympy as sp
 
 import scipy.sparse as scsp
 
-MAX_ITER = 100
+MAX_ITER = 5000
 
 def symbolic_jac(py_fn):
     # computes a symbolic jacobian matrix.
@@ -90,8 +90,6 @@ def solve_nd_fpi(M, N, f):
 
     assert spectral_radius(C) < 1
 
-    print(spectral_radius(C))
-
     u = g
     for _ in range(MAX_ITER):
         u = C.dot(u) + g
@@ -137,7 +135,7 @@ def choose_matrices(A, method="jacobi", omega=1.0):
     return M, N
 
 
-def solve_nd(A, f, method="jacobi", omega=1.0):
+def solve_nd(A, f, method="jacobi", omega=1.0, tol=1E-5):
     # solve Ax = b.
     # returns an iterator over tuples (u, r),
     # where u is successively better solutions,
@@ -148,10 +146,12 @@ def solve_nd(A, f, method="jacobi", omega=1.0):
                            method=method,
                            omega=omega)
 
-    for u in solve_nd_fpi(M, N, f):
+    for i, u in enumerate(solve_nd_fpi(M, N, f)):
         # compute the residual
         r = f - A.dot(u)
-        yield u, r
+        if LA.norm(r) < tol:
+            break
+    return i, u
 
 
 def lattice(n):
@@ -166,3 +166,27 @@ def lattice(n):
 def sample(F, n):
     # samples F over a n x n lattice.
     return np.array([F(x,y) for x, y in lattice(n)])
+
+
+def solve_nd_prec_fpi(C, g):
+    # same as solve_nd, but requires precomputed matrices.
+    u = g
+    for _ in range(MAX_ITER):
+        u = C.dot(u) + g
+        yield u
+
+def solve_nd_prec(A, f, method="jacobi", omega=1.0, tol=1E-5):
+    M, N = choose_matrices(A,
+                           method=method,
+                           omega=omega)
+
+    Mi = LA.inv(M)
+    C = Mi.dot(N)
+    g = Mi.dot(f)
+
+    for i, u in enumerate(solve_nd_prec_fpi(C, g)):
+        # compute the residual
+        r = f - A.dot(u)
+        if LA.norm(r) < tol:
+            break
+    return i, u

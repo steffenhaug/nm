@@ -49,6 +49,8 @@
     Jacobian $\Jac[\vec F]$, which means the function needs to consist of
     {\ttfamily sympy}-compatible primitives.
     Except for this restriction, the functions can be generic.
+    I have attempted to abstract away the {\tt sympy}-code,
+    because it is just boilerplate that pollutes the interesting part.
     \begin{python}[
         caption={Helper functions for symbolic manipulation}
     ]
@@ -93,7 +95,7 @@ MAX_ITER = 100
 def solve(F, x0, tol=1E-6):
     x, y = x0
 
-    J  = symbolic_jac(F)
+    J = symbolic_jac(F)
 
     # singular jacobian means trouble
     Jfn = callable_fn(J)
@@ -630,10 +632,48 @@ def relative_residual(appr):
     This is a promising result, so we search in that general area
     ($I = [1, 2]$). We find that $\omega \approx 1.5628$ gives
     $\rho \approx 0.7198$, which is a much faster converging
-    approximation.
-    Specifically, this converges significantly faster than the Gauss-Seidel algorithm.
+    approximation than any of the originals.
 
     \subsection{Comparing the relative time}
+    Now that we know (at least we think we know) the optimal
+    choice of $\omega$, it makes sense to benchmark all three algorithms.
+    The solver i presented earlier does not return early based on a
+    tolerance-criterium, because letting them all run for exactly the same
+    number of iterations makes nicer plots and easier (to read) code.
+    Now that we want the algorithms to compete, we don't want to na\"ively
+    run them all for the same amount of iterations.
+    (That would be a pretty dumb benchmark)
+    We can use the norm of the residual vector,
+    $\Norm[2]{\vec f - A \vec u}$ as a measure of error,
+    and return whenever this is close to zero.
+    Since we want to {\em really} pressure the algorithms,
+    it makes sense to use a very large value for {\tt MAX\_ITER} (i used $5000$)
+    and use a low tolerance (i used $1 \cdot 10^{-10}$)
+
+    To benchmark the algorithms, i will make them solve the same
+    problem in a long loop. This is simple, because we already have
+    the code to setup the problem we looked at previously, but it
+    is not a very sophisticated way to benchmark programs.
+    \begin{table}[H]
+        \centering
+        \caption{The time it takes to run 1000 iterations.}
+        \begin{tabular}{ccc}
+            \hline\hline
+            \bfseries Algorithm & \bfseries Time ($\mu$\si s) &\bfseries \# Iterations \\
+            \hline
+            Jacobi                       & 13718915 & 552\\
+            Gauss-Seidel                 & 9938928 & 276 \\
+            S. O. R. $(\omega = 1.5628)$ & 5126427 & 77 \\
+            \hline
+        \end{tabular}
+        \label{table:rhos}
+    \end{table}\noindent
+    Sure enough, the Gauss-Seidel algorithm runs faster than the Jacobi
+    method, and the succesive over-relaxation algorithm with optimal
+    $\omega$ is way faster than both of them.
+    Since this is exactly what we expected, the benchmark is probably
+    not too far off.
+
 
     \subsection{Relation between $k$, $\Delta x$ and convergence}
 
