@@ -129,6 +129,7 @@ def last(it):
     \end{python}
     \vspace{-0.5\baselineskip}
     \begin{python}[frame=b,numbers=none]
+# interactive session
 >>> from src.alg import solve, last
 >>> def F(x, y):
 ...     return x**2 + y**2 - 2, x - y
@@ -676,6 +677,12 @@ def relative_residual(appr):
 
 
     \subsection{Relation between $k$, $\Delta x$ and convergence}
+    It is clear from the previous discussion that what ultimately determines
+    the rate of convergence is the spectral radius of $C$.
+    Also, $k$ -- the wave number -- is fixed for a given problem,
+    so we can not choose it freely.
+
+    Recall that $\Delta x$ relates to the ``sampling frequency''.
 
 
 \end{multicols}
