@@ -18,7 +18,8 @@
             \includegraphics[
                 width  = \paperwidth,
                 height = \paperheight,
-                keepaspectratio]{bg.png}
+                keepaspectratio
+            ]{bg.png}
         }
     }
     \newgeometry{inner=0pt, outer=0pt}
@@ -39,9 +40,7 @@
     \end{center}
 \end{titlepage}
 
-\begin{multicols}{2}
-
-
+\begin{multicols*}{2}
     \section*{Problem 1}
     The goal is to implement Newtons method for a generic function
     $\vec F: \R^2 \longrightarrow \R^2$.
@@ -242,7 +241,7 @@ otherwise we will not see anything resembling convergence at all.
     two initial guesses that converges to different solutions.
     \begin{figure}[H]
         \centering
-        \includegraphics[width=0.75\columnwidth]{conv_pn}
+        \includegraphics[width=0.9\columnwidth]{conv_pn}
         \caption{
             Convergence of Newton's method along the line $x = y$,
             starting at $\vec x = (-50, 0)$ and $\vec x = (50, 0)$.
@@ -264,7 +263,7 @@ otherwise we will not see anything resembling convergence at all.
     and use the solver we already have.
 
     For every point in the complex plane, we are interested in which
-    of the three roots Newton's method converges to.
+    of the three roots of $f$ Newton's method converges to.
     \begin{figure}[H]
         \centering
         \includegraphics[width=0.75\columnwidth]{lores.pdf}
@@ -318,13 +317,7 @@ otherwise we will not see anything resembling convergence at all.
             l = \left(j - 1\right)n + i \\
         \end{array}\right.
     \]
-    which corresponds exactly to ``sampling'' $f$ at the lattice points:
-    $x_i = x_i(i)$ and $y_j = y_j(j)$ maps integer indeces $i$ and $j$
-    to lattice points bijectively.
-    $l = l(i,j)$ maps the same indeces to an index into a vector in $\R^{n^2}$
-    bijectively.
-    Thus, there is a bijective correspondance between lattice points
-    and vector components.
+    This corresponds exactly to ``sampling'' $f$ at the lattice points in $\Omega$:
     If we consider a concrete function
     \[
         f(x, y) \coloneqq \exp{\left(
@@ -340,12 +333,12 @@ otherwise we will not see anything resembling convergence at all.
         \centering
         \includestandalone[width=0.9\columnwidth]{plot_fxy}
         \caption{
-            $f(x, y)$ sampled across the lattice in $\Omega$.
+            $f(x, y)$ sampled across a lattice in $\Omega$.
         }
         \label{fig:sample}
     \end{figure}\noindent
     This sampling can be done succinctly in python, using
-    a generator function:
+    a generator function to produce the lattice:
     \begin{python}[
         caption={Program to sample functions over lattices}
    ]
@@ -356,13 +349,20 @@ def lattice(n):
 
 def sample(F, n):
     # samples F over a n x n lattice.
-    return np.array(
-        [F(x,y) for x, y in lattice(n)]
-    )
+    f = [F(x,y) for x, y in lattice(n)]
+    return np.array(f)
     \end{python}
     {\tt sample(F, n)} produces exactly the vector $\vec f$,
     for a given function {\tt F}, sampled over a lattice
-    in $\Omega$ with $\Delta x = 1/n$.
+    with $n$ points along each axis.
+
+    {\sc Note that} i have programmed it in a way that does
+    not use indeces directly {\em on purpose}, because we
+    usually work with 1-indexed arrays in mathematics,
+    and 0-indexed arrays in Python, so it is difficult
+    to reason back and forth because you have to mentally
+    translate the indexing, or write functions to
+    translate for you. Either way it becomes a mess.
 
     To solve the system $A\vec u = \vec f$, we want to use
     fix-point iteration:
@@ -459,7 +459,7 @@ def choose_matrices(A, method="jacobi", omega=1.0):
 
 
 def solve_nd(A, f, method="jacobi", omega=1.0):
-    # solve Ax = b.
+    # solve Ax = f.
     # returns an iterator over tuples (u, r),
     # where u is successively better solutions,
     # and r is the residual vector.
@@ -475,9 +475,9 @@ def solve_nd(A, f, method="jacobi", omega=1.0):
         yield u, r
     \end{python}
     Now, given some matrix $M$, and some vector $\vec b$,
-    we can solve the system $M\vec u = \vec b$.
+    we can solve systems of the form $M\vec u = \vec b$.
     Notice that, again, the system is implemented in such a way that it
-    produces succesively better and better approximations.
+    produces successively better and better approximations.
     It also computes a residual vector which it gives us along with
     each approximation as a tuple {\tt (u, r)}.
     This makes the API a little clunky if all we want to do is
@@ -512,7 +512,7 @@ def solve_nd(A, f, method="jacobi", omega=1.0):
 >>> b = np.array([1, 0])
 
 >>> u, v = last(solve_nd(A, b, method="Jacobi"))
->>> u
+>>> u # the left-hand element of the last tuple
 array([ 0.25, -0.25])
 
 >>> u, v = last(solve_nd(A, b, method="GS"))
@@ -559,12 +559,15 @@ A = gen_A(k, n)
     algorithms. These can be computed with the following Python-program:
     \begin{python}
 def right(it):
+    # "unzips" an iterator of tuples,
+    # producing only the right-hand elements.
     for _, x in it: yield x
 
 def relative_residual(appr):
     # we need a list, because
-    # we can't peek iterators
+    # we can't peek iterators.
     assert type(appr) == list
+    # compute the norm of the first element.
     a = LA.norm(appr[0][1])
     for r in right(iter(appr)):
         yield LA.norm(r) / a
@@ -602,11 +605,14 @@ def relative_residual(appr):
     Since $0 < \rho(C) < 1$, each component converges by itself,
     so the sequence converges in its entirety, but
     {\em only as fast as the slowest component converges!}
-    Naturally, the slowest converging component converges linearly,
+    Naturally, the slowest converging component lies on the span
+    of the eigen-vector of $C$ corresponding to $\lambda = \rho(C)$.
+    The components in this subspace converges linearly,
     with $\mu = \rho(C)$.
 
     Using Python, we can easily compute the spectral radiuses
-    of the iteration matrices.
+    of the iteration matrices, essentially producing an upper bound
+    for the rate of convergance for each algorithm.
     \begin{table}[H]
         \centering
         \caption{The spectral radiuses of the iteration matrices for each method}
@@ -670,24 +676,58 @@ def relative_residual(appr):
         \label{table:rhos}
     \end{table}\noindent
     Sure enough, the Gauss-Seidel algorithm runs faster than the Jacobi
-    method, and the succesive over-relaxation algorithm with optimal
+    method, and the successive over-relaxation algorithm with optimal
     $\omega$ is way faster than both of them.
     Since this is exactly what we expected, the benchmark is probably
     not too far off.
 
 
-    \subsection{Relation between $k$, $\Delta x$ and convergence}
+    \subsection{Relation between $k$, $\Delta x$ and rate of convergence}
     It is clear from the previous discussion that what ultimately determines
-    the rate of convergence is the spectral radius of $C$.
-    Also, $k$ -- the wave number -- is fixed for a given problem,
+    the rate of convergence is the spectral radius of $C = M^{-1}N$.
+    The wave number $k$ is fixed for a given problem,
     so we can not choose it freely.
 
-    Recall that $\Delta x$ relates to the ``sampling frequency''.
-    Intuitively, we expect the algorithm to converge more slowly if the lattice
-    is finer, since the have to do more work to find a finer approximation.
+    If we consider that $A$ is deconposed into $M$ and $N$,
+    in such a way that $M$ is lower triangular,
+    we may notice that $M$, regardless of our choice of
+    algorithm, has $4 - (k\Delta x)^2$ all along the diagonal.
+    This means that $M^{-1}$ has spectral radius
+    $\rho = 1 / \left(4 - (k\Delta x)^2\right)$.
+    Regardless of choice of algorithm.
+
+    We know that $0 < \Delta x \leq 1$, since $n$ is a positive number.
+    It is therefore technically possible for $\rho$ to blow up given
+    values $k > 1$, which makes it possible for $(k\Delta x)^2$
+    to take the value $4$. I will ignore this, because it is not
+    the case in our problem.
+    We see that the absolute lowest we can make $\rho(M^{-1})$ is
+    $1/4$, regardless the choice of algorithm, by choosing a really
+    small $\Delta x$.
+
+    On the other hand, considering the Jacobi decomposition, i found
+    that by making $\Delta x$ really small, $\rho(N)$ approached $4$.
+    This means that if we just let $\Delta x \longrightarrow 0$,
+    The operation of $N$ on the space is to stretch something by a
+    factor $4$, and the operation of $M^{-1}$ is to scale back down
+    with a factor $1/4$, essentially taking us no-where.
+
+    Recall that $\Delta x$ is just how dense our lattice is;
+    this result says intuitively that if we want a very precise solution,
+    the iteration converges very slowly.
+
+    Some more calculations reveals why the successive over-relaxation
+    algorithm converges so much faster compared to the Jacobi method:
+    We essentially ``move'' a part of $N$ into $M$,
+    and it turns out that for a suitable
+    choice of the relaxation coefficient $\omega$,
+    this {\em decreases} the spectral radius of $N$ {\em way more}
+    than it {\em increases} the spectral radius of $M^{-1}$.
+    Since the spectral radius ultimately places an upper bound on the
+    rate of convergence for an iterative procedure, this means
+    that successive over-relaxation methods converge quickly.
 
 
 
-
-\end{multicols}
+\end{multicols*}
 \end{document}
