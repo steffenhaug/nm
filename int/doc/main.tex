@@ -1,0 +1,277 @@
+\documentclass[12pt]{article}
+
+\input{setup}
+
+\addbibresource{b.bib}
+
+\definecolor{ThemeBG}{HTML}{C1DCBD}
+\definecolor{ThemeFrame}{HTML}{000000}
+%% backround on front-page
+\usepackage[firstpage=true]{background}
+
+\begin{document}
+\begin{titlepage}
+    \backgroundsetup{
+        contents={}
+    }
+    \newgeometry{inner=0pt, outer=0pt}
+    \pagecolor{ThemeBG!70}
+    \afterpage{
+        \nopagecolor
+        \restoregeometry
+    }
+    \begin{center}
+        \noindent\fcolorbox{ThemeFrame}{ThemeBG}{
+            \parbox{0.5\textwidth}{
+                \begin{center}
+                    \vspace{1em}
+                    {\large\fontspec{Gill Sans}
+                    \addfontfeature{LetterSpace=20.0}STEFFEN HAUG}\\[2em]
+                    {\Huge\it Numeriske Metodar}
+                    \vspace{1.618em}
+                \end{center}
+            }
+        }
+        \vfill
+        {\ttfamily Prosjekt 3}
+    \end{center}
+\end{titlepage}
+
+\begin{multicols*}{2}
+
+    \section{Kvadraturmetodar}
+
+
+    \subsection{Adaptiv Simpson-kvadratur}
+\begin{python}[caption={Adaptiv Simpson-kvadratur}]
+def asm_quad(f, a, b, tol=1e-5):
+
+    def S(a, b):
+        return abs(b - a) / 6 \
+             * (f(a) + 4 * f((a + b) / 2) + f(b))
+
+    I_0 = S(a, b)
+    c = (a + b) / 2
+
+    I = S(a, c) + S(c, b)
+    err = abs(I - I_0) / 15
+
+    if err <= tol:
+        return I + (I - I_0) / 15
+
+    return asm_quad(f, a, c, tol=tol/2) \
+         + asm_quad(f, c, b, tol=tol/2)
+\end{python}
+
+
+    \subsection{Romberg-kvadratur}
+
+\begin{python}[caption={Adaptiv Simpson-kvadratur}]
+def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
+    R = np.full(shape = (2, MAX_ITER),
+                fill_value = np.nan)
+    Rp, Rn = 0, 1
+
+    h = b - a
+    R[Rp, 0] = 0.5 * h * (f(a) + f(b))
+
+    for n in range(1, MAX_ITER):
+        h = h * 0.5
+        L = np.linspace(a + h, b - h, 1 << n - 1)
+        R[Rn, 0] = R[Rp, 0]/2 + h * np.sum(f(L))
+
+        for k in range(1, n + 1):
+            E = (R[Rn, k - 1] - R[Rp, k - 1]) \
+              / ((1 << 2 * k) - 1)
+            R[Rn, k] = R[Rn, k - 1] + E
+
+        Rp, Rn = Rn, Rp
+
+        if abs(E) < tol:
+            break
+
+    return R[Rp, n]
+\end{python}
+
+
+
+
+
+    \section{Simulasjon av fri, stiv lekam}
+    Vi ønsker å simulere ein {\em fri, stiv lekam},
+    med andre ord ein lekam som ikkje lar seg deformere,
+    som roterer fritt i rommet frå ein gitt start-tilstand.
+
+    Fri rotasjon betyr at netto påført dreiemoment er null.
+    At lekamen ikkje lar seg deformere medfører at
+    treighetsmomentet er konstant. (massen flyttar seg ikkje relativt
+    til rotasjons-aksen)
+    Dette betyr at normen til dreieimpulsen, og rotasjonsenergien er bevart. \cite{lien}
+    Ingenting hindrar dreieimpulsen i å endre retning.
+
+    \subsection{Definisjon av problemet}
+    Differensiallikninga
+    \cite[Namn på symbol er endra for å vår oppgåvetekst]{lien}
+    \begin{equation}
+        \Mat T \deldel{\vec \upomega}{t} + \vec \upomega \times \Mat T\vec \upomega = \Mat M
+        \label{_euler}
+    \end{equation}
+    skildrar rotasjonen til eit stivt legeme.
+    Her er $\Mat M$ påført dreiemoment,
+    $\Mat T$ treighetsmoment, og $\vec \upomega$ vinkelfart.
+    Per antagelse er $M = 0$. Innfør substitusjonen
+    \begin{align*}
+        \vec m &= \Mat T \vec \upomega \\
+        \implies \deldel{\vec m}{t} = \Mat T \dd{\upomega}{t} \quad&\text{og} \quad
+        \vec \upomega = \Mat T^{-1} \vec m
+    \end{align*}
+    sett inn i \eqref{_euler},
+    trekk frå $\textdd{\vec m}{t}$ på begge sider,
+    og snu kryss-produktet for å få like forteikn.
+    Vi skriv $\dot f = \textdd{f}{t}$.
+    \begin{equation}
+        \dot \vec m = \vec m \times \Mat T^{-1} \vec m
+        \label{euler}
+        \tag{\ref{_euler}*}
+    \end{equation}
+    Bevaringslovene nevnt til å byrje med gir oss:
+    \begin{align}
+        \label{sph}
+        \gamma &= \Norm{\vec m}^2 = \vec m(t) \cdot \vec m(t) \\
+        \label{ell}
+        E &= \frac{1}{2} \vec m(t) \cdot \Mat T^{-1} \vec m(t)
+    \end{align}
+    Der \eqref{sph} er ei sfære med radius  $\Norm{\vec m}$,
+    og \eqref{ell} er ei ellipse.
+    Sidan {\em begge} er konstantar er løysingane $\vec m$ begrensa
+    til å sitje på skjæringa mellom flatene.
+
+    %% $\mathscr J$
+    Anta $\Mat T = \Diag(\Mat I_1, \Mat I_2, \Mat I_3)$.
+    Ettersom $\Mat T$ er diagonal er
+    $\Mat T^{-1} = \Diag(1/\Mat I_1, 1/\Mat I_2, 1/\Mat I_3)$
+    Skriv $\vec m = (x \; y \; z)$, og skriv ut \eqref{euler}
+    på komponentform:
+    \begin{align*}
+        \underset{\dot \vec m}{\begin{pmatrix}
+            \dot x(t) \\ \dot y(t) \\ \dot z(t)
+        \end{pmatrix}}
+        =
+        \underset{\vec m}{\begin{pmatrix}
+            x(t) \\ y(t) \\ z(t)
+        \end{pmatrix}}
+        \times
+        \left[
+            \underset{\Mat T^{-1}}{\begin{pmatrix}
+            1/\Mat I_1 &0&0 \\ 0& 1/\Mat I_2 &0 \\ 0&0& 1/\Mat I_3
+        \end{pmatrix}}
+        \underset{\vec m}{\begin{pmatrix}
+            x(t) \\ y(t) \\ z(t)
+    \end{pmatrix}}
+    \right]
+    \end{align*}
+    Rekn ut kryssproduktet:
+    \begin{align}
+        \label{euler_komp}
+        \underset{\dot \vec m}{\begin{pmatrix}
+            \dot x(t) \\ \dot y(t) \\ \dot z(t)
+        \end{pmatrix}}
+        =
+        \underset{f(t, \vec m)}{\begin{pmatrix}
+            A y(t) z(t) \\ B x(t) z(t) \\ C  x(t) y(t)
+        \end{pmatrix}}
+    \end{align}
+    der $A$, $B$ og $C$ er konstantar
+    \begin{align*}
+        A = 1/I_3 - 1/I_2 \\
+        B = 1/I_3 - 1/I_1 \\
+        C = 1/I_2 - 1/I_1
+    \end{align*}
+
+    \subsection{Implisitt Runge-Kutta midtpunkt-metode}
+    Vi ønsker å løyse differensiallikningar av sorten
+    \[
+        \dot y = f(t, y)
+    \]
+    numerisk, ved hjelp av Runge-Kutta metoden
+    \begin{equation}
+        y_{n + 1} = y_n + h f\left( t_n + \frac{h}{2}, \frac{1}{2}(y_n + y_{n + 1})\right) \text,
+        \label{mpm}
+    \end{equation}
+    kalt {\em implisitt midtpunktmetode}, fordi $y_{n+1}$ avheng
+    av eit estimat for $y_{n+1/2}$ (derav implisitt)
+    for å estimere tangenten i midpunktet mellom $t_n$ og $t_{n+1}$.
+    Substituer
+    \[
+        u = \frac 1 2 (y_n + y_{n + 1}) \implies y_{n+1} = 2u - y_n
+    \]
+    for å forenkle notasjonen litt.
+    Dette gir likningssystemet
+    \begin{align*}
+                 & 2u - y_n = y_n + h f\left( t + h/2, u \right) \\
+        \implies & u = y_n + \frac h 2 f\left( t+h/2, u \right) \\
+        \implies & y_n + \frac h 2 f\left( t+h/2, u \right) - u = 0
+    \end{align*}
+    som må løysast med omsyn til $u$ for kvart tidssteg.
+    Gitt ein verdi for $u$ reknar vi ut $y_{n+1}$:
+    \begin{equation}
+        y_{n+1} = y_n + h f(t + h/2, u)
+    \end{equation}
+
+    \subsection*{Anvending på problemet}
+    Eit steg gjenstår før vi kan løyse problemet:
+    Vi er nøtt å velgje ein måte å løyse det implisitte steget.
+    Frå \eqref{euler} får vi med
+    $u = (x \, y \, z)$ likninga
+    \begin{equation}
+        \begin{pmatrix}
+            x_n \\ y_n \\ z_n
+        \end{pmatrix}
+        + \frac h 2
+        \begin{pmatrix}
+            A y z \\ B x z \\ C x y
+        \end{pmatrix}
+        -
+        \begin{pmatrix}
+            x \\ y \\ z
+        \end{pmatrix}
+        = 0 \text.
+    \end{equation}
+    Vi innlemmer $h/2$ i konstantane $A$, $B$ og $C$.
+    Til slutt sit vi att med systemet
+    \begin{align*}
+        \left\{
+        \begin{array}{c}
+            x_n + \hat A y z - x = 0 \\
+            y_n + \hat B x z - y = 0 \\
+            z_n + \hat C x y - z = 0
+        \end{array}
+        \right.
+    \end{align*}
+    der $x_n$, $y_n$, $z_n$,
+    samt $\hat A$, $\hat B$ og $\hat C$ er kjende konstantar.
+    Jacobian-matrisa lar seg enkelt rekne ut ved hjelp av symbolske
+    verktøy, til dømes {\tt sympy} i Python. Vi har
+    \[
+        \mathscr J = \begin{pmatrix}
+            -1          &   \hat A z    & \hat A y \\
+            \hat B z    &   -1          & \hat B x \\
+            \hat C y    &   \hat C x    & -1
+        \end{pmatrix} \text.
+    \]
+    Altso kan vi finne $(x \, y\, z)$ med å bruke newtons metode:
+    \[
+        u \longleftarrow u - \mathscr J^{-1} \vec F(u)
+    \]
+    som burde konvergere svært raskt dersom vi brukar
+    førre iterasjon som startpunkt; $u_0 = (x_n \, y_n \, z_n)$.
+
+
+
+
+
+    \printbibliography
+
+
+\end{multicols*}
+\end{document}

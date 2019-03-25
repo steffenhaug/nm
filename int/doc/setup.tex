@@ -1,0 +1,177 @@
+% Document Setup
+% ==============
+
+\author{Steffen Haug}
+%% remove the temporary files (.bcf, .aux, ...) if
+%% you change the language, because this invalidates
+%% the cached babel settings.
+\usepackage[nynorsk]{babel}
+
+\usepackage{csquotes}
+\usepackage[style=phys]{biblatex}
+\usepackage{scalerel}
+\usepackage{relsize}
+
+\usepackage{bm, upgreek}
+
+\usepackage{mathtools} % coloneqq
+\usepackage{siunitx}
+\usepackage{textcomp}
+
+\usepackage{unicode-math}
+
+% Get mathbb and mathcal back (unicode-math replaces them)
+\DeclareMathAlphabet{\mathcal}{OMS}{cmsy}{m}{n}
+\let\mathbb\relax % remove the definition by unicode-math
+\DeclareMathAlphabet{\mathbb}{U}{msb}{m}{n}
+
+\setmainfont{EB Garamond}
+\setmonofont{Courier New}
+\setmathfont[StylisticSet={7, 2, 10}]{Garamond-Math}
+
+
+% Custom Commands
+% ---------------
+\newcommand{\Vect}[1]{{\mathbf{#1}}}
+\let\vec\Vect
+
+\newcommand{\Mat}[1]{\mathbf{\mathrm{#1}}}
+
+\newcommand{\deldel}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\deldelN}[3]{\frac{\partial^{#3} #1}{\partial #2 ^{#3}}}
+\newcommand{\dd}[2]{\frac{\mathrm d #1}{\mathrm d #2}}
+\newcommand{\textdd}[2]{{\mathrm d #1}/{\mathrm d #2}}
+\newcommand{\Tay}[3]{T_{#2}\left \{ #1 \right \}(#3)}
+\newcommand{\LRSeq}[1]{\left\{ #1 \right\}}
+\newcommand{\Seq}[1]{\big\{ #1 \big\}}
+
+%% fourier transform
+\newcommand{\FT}[2]{
+    \frac{1}{\sqrt{2\pi}} \smashoperator{\int\limits_{#1=-\infty\mathstrut}^{#1=\infty\mathstrut}}
+        #2 e^{-i\omega #1} \D #1
+}
+
+\newcommand{\Err}[1]{\mathrm{error}_{#1}}
+\newcommand{\Diam}{\mathrm{diam}}
+\newcommand{\D}{\mathrm{d}}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\C}{\mathbb{C}}
+
+\newcommand{\Norm}[2][]{\left\lVert#2\right\rVert_{#1}}
+\newcommand{\Jac}[1][]{\mathbf{J}_{#1}}
+\newcommand{\Diag}[1]{\mathrm{diag} #1}
+
+
+\newcommand{\Fig}[1]{\mbox{\scshape figure \ref{fig:#1}}}
+\newcommand{\Tab}[1]{\mbox{\scshape table \ref{table:#1}}}
+
+\DeclareMathOperator*{\Sub}{\Bigg\vert}
+
+% smash bounding boxes. useful for limits etc.
+% \def\mathclap#1{\text{\hbox to 0pt{\hss$\mathsurround=0pt#1$\hss}}}
+
+% -- Text Formatting
+\linespread{1.10}
+
+% -- Custom Titles
+\usepackage{titlesec}
+
+\renewcommand\thesection{\Roman{section}}
+\renewcommand\thesubsection{\normalfont\roman{subsection}}
+\titleformat{name=\section,numberless}[block]{\Large\scshape}{}{0pt}{}
+\titleformat{name=\section}[block]{\Large\scshape}{\thesection.}{5pt}{}
+
+\titleformat{name=\subsection,numberless}[block]{\filcenter\large\scshape}{}{0pt}{}
+\titleformat{name=\subsection}[block]{\filcenter\large\scshape}{\thesubsection.}{5pt}{}
+
+\usepackage{moresize}
+\usepackage{abstract}
+\usepackage{appendix}
+
+\renewcommand{\abstractnamefont}{\normalfont\scshape}
+\renewcommand{\abstracttextfont}{\normalfont\small}
+
+% -- Title Section
+\usepackage{titling} % Customising the title section
+\setlength{\droptitle}{-5\baselineskip} % Move the title up
+
+% Document margins optimized for two-column layout; they
+\usepackage[
+    marginparwidth=35mm,
+    right=15mm,
+    left=15mm,
+    head=15pt,
+]{geometry}
+\setlength{\columnsep}{5mm}
+\usepackage{afterpage}
+\usepackage{pagecolor}
+
+% -- Headers and footers
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhead{}
+\fancyfoot{}
+\fancyfoot[C]{\thepage}
+
+
+% clean up the "plain" style.
+\fancypagestyle{plain}{\
+  \fancyhf{}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+
+\usepackage{float}
+\usepackage{multicol}
+\usepackage{graphics}
+
+% -- Custom captions
+\usepackage[hang,small,labelfont=bf,up,textfont=it,up]{caption}
+
+% -- Compact lists
+\usepackage{enumitem}
+\setlist[itemize]{noitemsep}
+
+% -- LISTINGS --
+\usepackage{listings}
+% Options for all coding environments
+\lstset{
+    basicstyle=\scriptsize\ttfamily
+}
+\lstset{
+    frame=tb,
+    framexleftmargin=2.5em,
+    numbers=left,
+    xleftmargin=2.5em,
+    showstringspaces=false,
+}
+
+% The built-in python highlighter is for python2,
+% so we need to modify it:
+\newcommand\pythonstyle{\lstset{
+language=Python,
+morekeywords={self, yield, as, assert, pass},
+}}
+
+% python env.
+\lstnewenvironment{python}[1][]
+{
+\pythonstyle
+\lstset{#1}
+}
+{}
+
+% inline pytohn env.
+\newcommand\pythoninline[1]{{\pythonstyle\lstinline!#1!}}
+
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{standalone}
+
+\usepackage{caption}
+\captionsetup{format = plain, font = footnotesize, labelfont = {sc}}
+
+\usepackage{multicol}
+\usepackage{marginnote}
