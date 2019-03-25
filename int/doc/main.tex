@@ -44,32 +44,30 @@
 
     \subsection{Adaptiv Simpson-kvadratur}
 \begin{python}[caption={Adaptiv Simpson-kvadratur}]
+def S(f, a, b):
+    return (f(a) + 4 * f((a + b) / 2) + f(b))  \
+         * (b - a) / 6
+
 def asm_quad(f, a, b, tol=1e-5):
-
-    def S(a, b):
-        return abs(b - a) / 6 \
-             * (f(a) + 4 * f((a + b) / 2) + f(b))
-
-    I_0 = S(a, b)
+    I0 = S(f, a, b)
     c = (a + b) / 2
 
-    I = S(a, c) + S(c, b)
-    err = abs(I - I_0) / 15
+    I = S(f, a, c) + S(f, c, b)
+    err = abs(I - I0) / 15
 
-    if err <= tol:
-        return I + (I - I_0) / 15
-
-    return asm_quad(f, a, c, tol=tol/2) \
-         + asm_quad(f, c, b, tol=tol/2)
+    if err < tol:
+        return I + (I - I0) / 15
+    else:
+        return asm_quad(f, a, c, tol=tol/2)  \
+             + asm_quad(f, c, b, tol=tol/2)
 \end{python}
 
 
     \subsection{Romberg-kvadratur}
 
-\begin{python}[caption={Adaptiv Simpson-kvadratur}]
+\begin{python}[caption={Romberg-kvadratur}]
 def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
-    R = np.full(shape = (2, MAX_ITER),
-                fill_value = np.nan)
+    R = np.zeros((2, MAX_ITER))
     Rp, Rn = 0, 1
 
     h = b - a
@@ -81,7 +79,7 @@ def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
         R[Rn, 0] = R[Rp, 0]/2 + h * np.sum(f(L))
 
         for k in range(1, n + 1):
-            E = (R[Rn, k - 1] - R[Rp, k - 1]) \
+            E = (R[Rn, k - 1] - R[Rp, k - 1])  \
               / ((1 << 2 * k) - 1)
             R[Rn, k] = R[Rn, k - 1] + E
 
@@ -94,6 +92,12 @@ def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
 \end{python}
 
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{simp_err}
+    \caption{Feil i adaptiv Simpson-kvadratur.
+    Ein ser at feilen er grensa ovanfrå av toleransen.}
+\end{figure}
 
 
 
@@ -111,7 +115,7 @@ def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
 
     \subsection{Definisjon av problemet}
     Differensiallikninga
-    \cite[Namn på symbol er endra for å vår oppgåvetekst]{lien}
+    \cite[Namn på symbola er endra for å passe vår oppgåvetekst]{lien}
     \begin{equation}
         \Mat T \deldel{\vec \upomega}{t} + \vec \upomega \times \Mat T\vec \upomega = \Mat M
         \label{_euler}
@@ -128,7 +132,7 @@ def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
     sett inn i \eqref{_euler},
     trekk frå $\textdd{\vec m}{t}$ på begge sider,
     og snu kryss-produktet for å få like forteikn.
-    Vi skriv $\dot f = \textdd{f}{t}$.
+    Samtidig innfører vi notasjonen $\dot f = \textdd{f}{t}$.
     \begin{equation}
         \dot \vec m = \vec m \times \Mat T^{-1} \vec m
         \label{euler}
@@ -143,13 +147,13 @@ def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
     \end{align}
     Der \eqref{sph} er ei sfære med radius  $\Norm{\vec m}$,
     og \eqref{ell} er ei ellipse.
-    Sidan {\em begge} er konstantar er løysingane $\vec m$ begrensa
+    Sidan både $\gamma$ og $E$ er konstantar er løysingane $\vec m$ begrensa
     til å sitje på skjæringa mellom flatene.
 
     %% $\mathscr J$
     Anta $\Mat T = \Diag(\Mat I_1, \Mat I_2, \Mat I_3)$.
     Ettersom $\Mat T$ er diagonal er
-    $\Mat T^{-1} = \Diag(1/\Mat I_1, 1/\Mat I_2, 1/\Mat I_3)$
+    $\Mat T^{-1} = \Diag(1/\Mat I_1, 1/\Mat I_2, 1/\Mat I_3)$.
     Skriv $\vec m = (x \; y \; z)$, og skriv ut \eqref{euler}
     på komponentform:
     \begin{align*}
@@ -219,11 +223,11 @@ def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
     \end{equation}
 
     \subsection*{Anvending på problemet}
-    Eit steg gjenstår før vi kan løyse problemet:
+    Eitt steg gjenstår før vi kan implementere løysaren:
     Vi er nøtt å velgje ein måte å løyse det implisitte steget.
-    Frå \eqref{euler} får vi med
-    $u = (x \, y \, z)$ likninga
+    Frå \eqref{euler} får vi, med $\vec u = (x \, y \, z)$, likninga
     \begin{equation}
+        \vec F (\vec u) =
         \begin{pmatrix}
             x_n \\ y_n \\ z_n
         \end{pmatrix}
@@ -253,22 +257,18 @@ def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
     Jacobian-matrisa lar seg enkelt rekne ut ved hjelp av symbolske
     verktøy, til dømes {\tt sympy} i Python. Vi har
     \[
-        \mathscr J = \begin{pmatrix}
+        \mathscr J_\vec F = \begin{pmatrix}
             -1          &   \hat A z    & \hat A y \\
             \hat B z    &   -1          & \hat B x \\
             \hat C y    &   \hat C x    & -1
         \end{pmatrix} \text.
     \]
-    Altso kan vi finne $(x \, y\, z)$ med å bruke newtons metode:
+    Altso kan vi finne $\vec u = (x \; y\; z)$ med å bruke Newtons metode:
     \[
-        u \longleftarrow u - \mathscr J^{-1} \vec F(u)
+        \vec u \longleftarrow \vec u - \mathscr J^{-1}_\vec F \vec F(\vec u)
     \]
-    som burde konvergere svært raskt dersom vi brukar
-    førre iterasjon som startpunkt; $u_0 = (x_n \, y_n \, z_n)$.
-
-
-
-
+    som burde konvergere i løpet av svært få iterasjonar dersom vi brukar
+    førre iterasjon som startpunkt, og relativt kort skrittlengde.
 
     \printbibliography
 
