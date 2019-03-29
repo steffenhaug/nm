@@ -76,7 +76,7 @@ def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
     for n in range(1, MAX_ITER):
         h = h * 0.5
         L = np.linspace(a + h, b - h, 1 << n - 1)
-        R[Rn, 0] = R[Rp, 0]/2 + h * np.sum(f(L))
+        R[Rn, 0] = R[Rp, 0]/2 + np.sum(f(L))*h
 
         for k in range(1, n + 1):
             E = (R[Rn, k - 1] - R[Rp, k - 1])  \
@@ -85,8 +85,7 @@ def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
 
         Rp, Rn = Rn, Rp
 
-        if abs(E) < tol:
-            break
+        if abs(E) < tol: break
 
     return R[Rp, n]
 \end{python}
@@ -124,12 +123,14 @@ def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
     Her er $\Mat M$ påført dreiemoment,
     $\Mat T$ treighetsmoment, og $\vec \upomega$ vinkelfart.
     Per antagelse er $M = 0$. Innfør substitusjonen
-    \begin{align*}
-        \vec m &= \Mat T \vec \upomega \\
-        \implies \deldel{\vec m}{t} = \Mat T \dd{\upomega}{t} \quad&\text{og} \quad
+    \[
+        \vec m = \Mat T \vec \upomega
+    \]
+    \[
+        \implies \deldel{\vec m}{t} = \Mat T \dd{\upomega}{t} \quad\text{og} \quad
         \vec \upomega = \Mat T^{-1} \vec m
-    \end{align*}
-    sett inn i \eqref{_euler},
+    \]
+    i \eqref{_euler},
     trekk frå $\textdd{\vec m}{t}$ på begge sider,
     og snu kryss-produktet for å få like forteikn.
     Samtidig innfører vi notasjonen $\dot f = \textdd{f}{t}$.
@@ -188,7 +189,7 @@ def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
     der $A$, $B$ og $C$ er konstantar
     \begin{align*}
         A = 1/I_3 - 1/I_2 \\
-        B = 1/I_3 - 1/I_1 \\
+        B = 1/I_1 - 1/I_3 \\
         C = 1/I_2 - 1/I_1
     \end{align*}
 
@@ -227,6 +228,7 @@ def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
     Vi er nøtt å velgje ein måte å løyse det implisitte steget.
     Frå \eqref{euler} får vi, med $\vec u = (x \, y \, z)$, likninga
     \begin{equation}
+        \label{u_eq}
         \vec F (\vec u) =
         \begin{pmatrix}
             x_n \\ y_n \\ z_n
@@ -269,6 +271,87 @@ def romberg(f, a, b, MAX_ITER=100, tol=1e-5):
     \]
     som burde konvergere i løpet av svært få iterasjonar dersom vi brukar
     førre iterasjon som startpunkt, og relativt kort skrittlengde.
+
+
+    \subsection{Implementasjon av RK-metoden}
+    Vi brukar eit symbolsk verktøy for å rekne ut \eqref{u_eq}
+    i forkant; koden for dette er ikkje spesielt vanskelig,
+    men den er stygg, så eg har klipt den ut.
+    Den kan finnast i notebooken {\tt rk3d.pynb}.
+
+\begin{python}[caption={Implisitt Runge-Kutta midtpunktmetode.}]
+def RK(f, y0, t):
+
+# (sympy-junk removed from here)
+# F = F(u), Ji = inv(Jac(F))
+
+y = np.empty((len(t), 3))
+y[0] = y0
+
+for n in range(len(t) - 1):
+    h = t[n + 1] - t[n]
+
+    u = newton(
+        lambda u:  F(u, y[n], t[n] + h/2, h),
+        lambda u: Ji(u, y[n], t[n] + h/2, h),
+        y[n]
+    )
+
+    m = np.array(f(t[n] + h/2, u), dtype=float)
+
+    y[n + 1] = y[n] + h * m
+
+return y.T
+\end{python}
+I metoden inngår Newtons metode;
+denne har vi implementert i ei tidlegare øving,
+men legg den ved for kompletthets skuld:
+\begin{python}[caption={Newtons metode frå tidlegare øving.}]
+def newton(F, Ji, u0, tol=1e-10, maxiter=10):
+    u = u0
+    for _ in range(maxiter):
+        u = u - Ji(u).dot(F(u))
+
+        if linalg.norm(F(u)) < tol:
+            break
+
+    return u
+\end{python}
+Den eine haka ved implementasjonen er at differensiallikninga vi
+vil løyse, for det første, må vera tredimensjonell,
+og for det andre må vera definert berre ved hjelp av
+funksjonar som er kompatible med {\tt sympy}.
+
+Desse vala er gjort med vilje;
+det er enklare å ha eit eksplisitt uttrykk for
+Jacobian-matrisa ved kvart tidssteg, (som ein får ved å rekne den ut i forkant)
+enn å forsøke å estimere den numerisk.
+Når ein har bestemt seg for å bruke symbolske metodar
+i staden for tilnærmingar er det enklare å
+behandle uttrykk der dimensjonen er kjend.
+{\tt sympy} {\em har} funksjonalitet for å lage
+vektorar med symbol, så det er (i prinsippet) mogleg,
+men element i desse vektorane får obskure navn (som ``{\tt \_dummy\_123}'')
+som gjer feilsøking til eit mareritt.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\columnwidth]{euler}
+    \caption{
+        Løysing av \eqref{euler} med initialverdiar
+        $T = \Diag(1, 2, 5)$ og $m_0 = (2 \; 5 \; 7)$.
+        Tidsrommet er $[t = 0,\; t = 250]$, med $N = 500$ steg
+        med lik steglengde.
+        Motsette punkt på sfæra er farga likt,
+        $m_0$ er farga kvitt.
+    }
+\end{figure}
+
+
+
+
+
+
 
     \printbibliography
 
