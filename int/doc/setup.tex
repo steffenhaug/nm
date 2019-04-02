@@ -13,6 +13,8 @@
 \usepackage{relsize}
 
 \usepackage{bm, upgreek}
+\usepackage{booktabs}
+\usepackage{ulem}
 
 \usepackage{mathtools} % coloneqq
 \usepackage{siunitx}
@@ -25,13 +27,21 @@
 \let\mathbb\relax % remove the definition by unicode-math
 \DeclareMathAlphabet{\mathbb}{U}{msb}{m}{n}
 
-\setmainfont{EB Garamond}
+\setmainfont{EB Garamond}[RawFeature={+ss06}]
 \setmonofont{Courier New}
 \setmathfont[StylisticSet={7, 2, 10}]{Garamond-Math}
 
 
 % Custom Commands
 % ---------------
+\newcommand{\satan}{\rotatebox[origin=c]{180}{$\dagger$}}
+\newcommand{\psatan}{\rotatebox[origin=c]{180}{$^\dagger$}}
+
+\newcommand{\nablarule}{
+    \noindent\sout{\hfill} {\footnotesize$\nabla$} \sout{\hfill}
+}
+
+%%% math
 \newcommand{\Vect}[1]{{\mathbf{#1}}}
 \let\vec\Vect
 
@@ -64,8 +74,10 @@
 \newcommand{\Diag}[1]{\mathrm{diag} #1}
 
 
-\newcommand{\Fig}[1]{\mbox{\scshape figure \ref{fig:#1}}}
-\newcommand{\Tab}[1]{\mbox{\scshape table \ref{table:#1}}}
+\newcommand{\Fig}[1]{\mbox{\bfseries\scshape figur~\ref{fig:#1}}}
+\newcommand{\Tab}[1]{\mbox{\bfseries\scshape tabell~\ref{tab:#1}}}
+\newcommand{\A}[1]{\mbox{\bfseries\scshape appendix~\ref{#1}}}
+\newcommand{\Lst}[1]{\mbox{\bfseries\scshape listing~\ref{#1}}}
 
 \DeclareMathOperator*{\Sub}{\Bigg\vert}
 
@@ -99,7 +111,6 @@
 
 % Document margins optimized for two-column layout; they
 \usepackage[
-    marginparwidth=35mm,
     right=15mm,
     left=15mm,
     head=15pt,
@@ -128,6 +139,7 @@
 \usepackage{float}
 \usepackage{multicol}
 \usepackage{graphics}
+\usepackage{placeins}
 
 % -- Custom captions
 \usepackage[hang,small,labelfont=bf,up,textfont=it,up]{caption}
@@ -173,7 +185,7 @@ morekeywords={self, yield, as, assert, pass},
 \usepackage{standalone}
 
 \usepackage{caption}
-\captionsetup{format = plain, font = footnotesize, labelfont = {sc}}
+\captionsetup{format = plain, font = footnotesize, labelfont = {sc,bf}}
 
 \usepackage{multicol}
-\usepackage{marginnote}
+\usepackage{subcaption}
