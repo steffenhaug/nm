@@ -190,39 +190,41 @@
 
     Fri rotasjon betyr at netto påført dreiemoment er null.
     At lekamen ikkje lar seg deformere medfører at
-    treighetsmomentet er konstant. (massen flyttar seg ikkje relativt
+    treighetsmomentet er konstant. (massen ``flyttar seg ikkje'' relativt
     til rotasjons-aksen)
-    Dette betyr at normen til dreieimpulsen, og rotasjonsenergien er bevart. \cite{lien}
-    Ingenting hindrar dreieimpulsen i å endre retning.
+    Dette betyr at normen til dreieimpulsen er bevart (den er fri til å endre retning),
+    og rotasjonsenergien $E = \frac 1 2 T\vec \upomega^2$ er bevart. \cite{lien}
 
     \subsection{Definisjon av problemet}
     Differensiallikninga
-    \cite[Namn på symbola er endra for å passe vår oppgåvetekst]{lien}
+    \cite{lien}
     \begin{equation}
-        \Mat T \deldel{\vec \upomega}{t} + \vec \upomega \times \Mat T\vec \upomega = \vec M
+        \Mat T \DD{t}{\vec \upomega} + \vec \upomega \times \Mat T\vec \upomega = \vec M
         \label{_euler}
     \end{equation}
     skildrar rotasjonen til eit stivt legeme.
     Her er $\vec M$ påført dreiemoment,
     $\Mat T$ treighetsmoment, og $\vec \upomega$ vinkelfart.
-    Per antagelse er $\vec M = 0$. Innfør substitusjonen
-    \[
-        \vec m = \Mat T \vec \upomega
-    \]
-    \[
-        \implies \deldel{\vec m}{t} = \Mat T \dd{\upomega}{t} \quad\text{og} \quad
-        \vec \upomega = \Mat T^{-1} \vec m
-    \]
-    i \eqref{_euler},
-    trekk frå $\textdd{\vec m}{t}$ på begge sider,
+    Per antagelse er $\vec M = 0$. Innfør
+    $\vec m = \Mat T \vec \upomega$,
+    som er eit produkt av eit moment, $\Mat T$,
+    og ein fart, $\vec \upomega$. Altso er $\vec m$ ein form for {\em impuls}
+    -- nemleg {\em dreieimpulsen}. Vi har
+    \begin{equation}\label{dreieimpuls}
+        \DD{t}{\vec m} = \Mat T \DD{t}{\upomega} \quad\text{og} \quad
+        \vec \upomega = \Mat T^{-1} \vec m \text.
+    \end{equation}
+    I \eqref{_euler},
+    trekk frå $\DD*{t}{\vec m}$ på begge sider,
     og snu kryss-produktet for å få like forteikn.
-    Samtidig innfører vi notasjonen $\dot f = \textdd{f}{t}$.
+    Samtidig innfører vi notasjonen $\dot f$
+    for tids-deriverte.
     \begin{equation}
         \dot \vec m = \vec m \times \Mat T^{-1} \vec m
         \label{euler}
         \tag{\ref{_euler}*}
     \end{equation}
-    Bevaringslovene nevnt til å byrje med gir oss:
+    Bevaringslovene nevnt til å byrje med, saman med \eqref{dreieimpuls}, gir
     \begin{align}
         \label{sph}
         \gamma &= \Norm{\vec m}^2 = \vec m(t) \cdot \vec m(t) \\
